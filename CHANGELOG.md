@@ -1,0 +1,19 @@
+# Histórico de versões
+
+## 4.1.0
+
+- Atualizações integradas ao painel nativo do WordPress a partir deste repositório.
+- Opção de instalação automática, compartilhada com a configuração nativa de plugins.
+- Botão para consultar atualizações imediatamente.
+- Download de pacotes versionados com verificação SHA-256 e cache das consultas.
+- Remoção das credenciais fixas do código público. Configurações existentes na versão 4.0 são preservadas.
+- Versão do banco separada da versão do plugin para evitar migrações desnecessárias.
+
+## 4.0.0
+
+- Separação do plugin em módulos, templates, JavaScript e CSS.
+- Arquivamento reversível de desistências com motivo e histórico.
+- Visões de acompanhamento, arquivados e todos os registros.
+- Salvamento automático com fila por aluno e reenvio em caso de falha.
+- Validação de acesso e tokens nas ações de edição.
+- Preservação do tipo de aluno novo após a troca do RA.

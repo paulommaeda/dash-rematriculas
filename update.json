@@ -1,0 +1,10 @@
+{
+  "name": "Dashboard de Rematrículas Journey",
+  "version": "4.1.0",
+  "download_url": "https://raw.githubusercontent.com/paulommaeda/dash-rematriculas/main/dist/dashboard-rematriculas-4.1.0.zip",
+  "sha256": "195122cfa3afa2ee0149b61e51ca54b5e4d01a7ded5e2b9184d2a0808fb92b48",
+  "requires": "6.0",
+  "requires_php": "7.4",
+  "tested": "7.1.4",
+  "changelog": "# Histórico de versões\n\n## 4.1.0\n\n- Atualizações integradas ao painel nativo do WordPress a partir deste repositório.\n- Opção de instalação automática, compartilhada com a configuração nativa de plugins.\n- Botão para consultar atualizações imediatamente.\n- Download de pacotes versionados com verificação SHA-256 e cache das consultas.\n- Remoção das credenciais fixas do código público. Configurações existentes na versão 4.0 são preservadas.\n- Versão do banco separada da versão do plugin para evitar migrações desnecessárias.\n\n## 4.0.0\n\n- Separação do plugin em módulos, templates, JavaScript e CSS.\n- Arquivamento reversível de desistências com motivo e histórico.\n- Visões de acompanhamento, arquivados e todos os registros.\n- Salvamento automático com fila por aluno e reenvio em caso de falha.\n- Validação de acesso e tokens nas ações de edição.\n- Preservação do tipo de aluno novo após a troca do RA."
+}
