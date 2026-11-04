@@ -109,26 +109,13 @@ final class DRJ_Students {
     }
 
     public static function level($class) {
-        $plain = strtoupper(remove_accents($class));
-        if (strpos($plain, 'SERIE') !== false) {
-            return array('level' => 'EM', 'base' => 1520.00);
-        }
-        if (strpos($plain, 'ANO') !== false) {
-            $base = preg_match('/(\d+)/', $plain, $matches) && (int) $matches[1] <= 5 ? 1350.00 : 1290.00;
-            return array('level' => 'EF', 'base' => $base);
-        }
-        return array('level' => 'OUTRO', 'base' => 0.00);
+        $course = DRJ_Pricing::course($class);
+        return array('level' => in_array($course, array('EFI', 'EFII', 'EF'), true) ? 'EF' : ($course === 'EM' ? 'EM' : 'OUTRO'), 'base' => (float) DRJ_Pricing::base($class));
     }
 
     public static function view_data($student) {
         $level = self::level($student->turma);
-        $financial = array();
-        foreach (array('valor_2027', 'desc_condicional', 'desc_incondicional', 'desc_indicacao', 'desc_irmaos') as $key) {
-            $financial[$key] = isset($student->$key) ? (float) $student->$key : ($key === 'desc_condicional' ? 103.00 : 0.00);
-        }
-        if ($financial['valor_2027'] <= 0) {
-            $financial['valor_2027'] = $level['base'];
-        }
+        $financial = DRJ_Pricing::financial($student);
         return array(
             'id' => (int) $student->id,
             'ra' => (string) $student->ra,

@@ -3,6 +3,13 @@
 if (PHP_SAPI !== 'cli' || getenv('DRJ_TEST_ENV') !== '1' || !getenv('DRJ_WP_BOOTSTRAP')) exit("Defina DRJ_TEST_ENV=1 e DRJ_WP_BOOTSTRAP.\n");
 require getenv('DRJ_WP_BOOTSTRAP');
 wp_set_current_user(1);
+$pricing_backup = get_option(DRJ_Pricing::OPTION, false);
+$fixture_pricing = DRJ_Pricing::defaults();
+$fixture_pricing['bases']['EFI'] = '1000.25';
+$fixture_pricing['bases']['EFII'] = '2000.00';
+$fixture_pricing['conditional'] = '50.25';
+update_option(DRJ_Pricing::OPTION, $fixture_pricing, false);
+try {
 $checks = 0;
 function drj_fin_check($value, $label) {
     global $checks;
@@ -28,22 +35,22 @@ $total = $report['summary'];
 drj_fin_check($total['students'] === 3, 'visão inicial inclui rematriculados e novos e exclui pendentes');
 drj_fin_check($total['gross'] === 452025, 'bruto soma os valores por aluno em centavos');
 drj_fin_check($total['scholarships'] === 40500, 'total de benefícios mantém incondicional indicação e irmãos para calcular o líquido');
-drj_fin_check($total['conditional'] === 15325, 'desconto condicional é separado de bolsas');
-drj_fin_check($total['net'] === 396200, 'líquido deduz bolsas e desconto condicional');
+drj_fin_check($total['conditional'] === 15075, 'desconto condicional é separado de bolsas');
+drj_fin_check($total['net'] === 396450, 'líquido deduz bolsas e desconto condicional');
 drj_fin_check($total['scholarship_students'] === 2, 'contagem de bolsistas considera somente desconto incondicional');
 drj_fin_check(count($report['courses']) === 3 && count($report['classes']) === 3, 'relatório agrupa por curso e turma');
 drj_fin_check($report['courses'][0]['course'] === 'EFI' && $report['courses'][1]['course'] === 'EFII' && $report['courses'][2]['course'] === 'EM', 'cursos aparecem na ordem pedagógica');
 drj_fin_check($report['courses'][2]['gross'] === 152000, 'valor padrão do Médio mantém referência do painel original');
 $all = DRJ_Finance::calculate($students, drj_fin_filters(array('scope' => 'all')));
-drj_fin_check($all['summary']['students'] === 4 && $all['summary']['gross'] === 602025, 'projeção completa inclui pendentes e exclui arquivados');
-drj_fin_check($all['summary']['scholarships'] === 140500 && $all['summary']['conditional'] === 25625 && $all['summary']['net'] === 435900, 'projeção completa preserva conciliação dos descontos');
+drj_fin_check($all['summary']['students'] === 4 && $all['summary']['gross'] === 652025, 'projeção completa inclui pendentes e exclui arquivados');
+drj_fin_check($all['summary']['scholarships'] === 140500 && $all['summary']['conditional'] === 20100 && $all['summary']['net'] === 491425, 'projeção completa preserva conciliação dos descontos');
 $pending = DRJ_Finance::calculate($students, drj_fin_filters(array('scope' => 'pending')));
-drj_fin_check($pending['summary']['students'] === 1 && $pending['summary']['net'] === 39700, 'filtro de pendentes retorna apenas o saldo correspondente');
+drj_fin_check($pending['summary']['students'] === 1 && $pending['summary']['net'] === 94975, 'filtro de pendentes retorna apenas o saldo correspondente');
 $annual = DRJ_Finance::calculate($students, drj_fin_filters(array('basis' => 'contract')));
-drj_fin_check($annual['summary']['gross'] === 5224250 && $annual['summary']['net'] === 4591400, 'total de contratos respeita números diferentes de parcelas');
-drj_fin_check($annual['summary']['scholarships'] === 459000 && $annual['summary']['conditional'] === 173850, 'bolsas e condicionais também são multiplicados pelas parcelas');
+drj_fin_check($annual['summary']['gross'] === 5224250 && $annual['summary']['net'] === 4594400, 'total de contratos respeita números diferentes de parcelas');
+drj_fin_check($annual['summary']['scholarships'] === 459000 && $annual['summary']['conditional'] === 170850, 'bolsas e condicionais também são multiplicados pelas parcelas');
 $course = DRJ_Finance::calculate($students, drj_fin_filters(array('course' => 'EFII', 'scope' => 'all')));
-drj_fin_check($course['summary']['students'] === 2 && $course['summary']['gross'] === 350000, 'filtro de curso reúne os alunos corretos');
+drj_fin_check($course['summary']['students'] === 2 && $course['summary']['gross'] === 400000, 'filtro de curso reúne os alunos corretos');
 drj_fin_check(count($course['classes']) === 1 && $course['classes'][0]['scholarships'] === 120000, 'bolsas de uma turma são consolidadas');
 drj_fin_check($course['catalog']['classes'] === array('6º ANO'), 'lista de turmas acompanha o curso selecionado');
 $class = DRJ_Finance::calculate($students, drj_fin_filters(array('class' => '1º ANO')));
@@ -58,11 +65,16 @@ foreach (array($report, $all, $annual, $course, $class, $pending) as $scope) {
 drj_fin_check(true, 'totais por curso e por turma conciliam com o geral em todos os filtros');
 drj_fin_check(DRJ_Finance::course('5º ANO') === 'EFI' && DRJ_Finance::course('6º ANO') === 'EFII' && DRJ_Finance::course('3ª SÉRIE') === 'EM', 'identificação de curso aceita ano e série acentuada');
 drj_fin_check(DRJ_Finance::course('ANO') === 'EF' && DRJ_Finance::course('Grupo Especial') === 'OUTRO', 'turma sem curso reconhecido não recebe classificação inventada');
-$negative = DRJ_Finance::calculate(array(drj_fin_student(array('valor_2027' => 100, 'desc_incondicional' => 150))), drj_fin_filters());
-drj_fin_check($negative['summary']['net'] === -5000 && $negative['summary']['over_discount'] === 1, 'líquido negativo é preservado e sinalizado para revisão');
+$negative = DRJ_Finance::calculate(array(drj_fin_student(array('valor_2027' => 100, 'desc_incondicional' => 1500))), drj_fin_filters());
+drj_fin_check($negative['summary']['net'] === -55000 && $negative['summary']['over_discount'] === 1, 'líquido negativo é preservado e sinalizado para revisão');
+$penny_pricing = $fixture_pricing;
+$penny_pricing['bases']['EFI'] = '0.01';
+$penny_pricing['conditional'] = '0.00';
+update_option(DRJ_Pricing::OPTION, $penny_pricing, false);
 $pennies = array();
 for ($i = 0; $i < 100; $i++) $pennies[] = drj_fin_student(array('valor_2027' => '0.01'));
 drj_fin_check(DRJ_Finance::calculate($pennies, drj_fin_filters())['summary']['net'] === 100, 'somas repetidas não acumulam erros de ponto flutuante');
+update_option(DRJ_Pricing::OPTION, $fixture_pricing, false);
 $empty = DRJ_Finance::calculate(array(), drj_fin_filters());
 drj_fin_check($empty['summary']['gross'] === 0 && !$empty['courses'] && !$empty['classes'], 'relatório vazio retorna totais zerados');
 drj_fin_check(DRJ_Finance::percentage(0, 0) === '—', 'base zerada não provoca divisão por zero');
@@ -88,3 +100,7 @@ drj_fin_check(DRJ_Finance::percentage($report['courses'][2]['unconditional'], $r
 wp_set_current_user(0);
 drj_fin_check(strpos(DRJ_Finance::render(), 'data-drj-finance') === false, 'renderização financeira sem acesso não entrega dados');
 echo 'TOTAL: ' . $checks . ' verificações financeiras aprovadas.' . PHP_EOL;
+
+} finally {
+    if ($pricing_backup === false) delete_option(DRJ_Pricing::OPTION); else update_option(DRJ_Pricing::OPTION, $pricing_backup, false);
+}

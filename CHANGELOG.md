@@ -1,5 +1,14 @@
 # Histórico de versões
 
+## 4.4.0
+
+- Cadastro central de valor base por curso e desconto condicional único para todos os alunos.
+- Aplicação das mesmas referências em acompanhamento, financeiro, novos alunos e troca de turma.
+- Valor base e condicional somente para consulta no dashboard, com bloqueio de sobrescrita pelo salvamento individual.
+- Demais descontos, vencimento e parcelas continuam individuais.
+- Reinício das conferências apenas dos alunos afetados por alterações de referência; primeiro cadastro confirma a regra central para todos.
+- Valores zero respeitados e validação administrativa do cadastro.
+
 ## 4.3.0
 
 - Financeiro separado do acompanhamento, com menu próprio e shortcode exclusivo.

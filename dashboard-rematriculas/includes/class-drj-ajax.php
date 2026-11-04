@@ -53,9 +53,11 @@ final class DRJ_Ajax {
         self::run(function () {
             $student = self::student();
             $data = array();
-            foreach (array('valor_2027', 'desc_condicional', 'desc_incondicional', 'desc_indicacao', 'desc_irmaos') as $key) {
+            foreach (array('desc_incondicional', 'desc_indicacao', 'desc_irmaos') as $key) {
                 $data[$key] = self::decimal($key);
             }
+            $data['valor_2027'] = DRJ_Pricing::base($student->turma);
+            $data['desc_condicional'] = DRJ_Pricing::conditional();
             $day_text = self::post('vencimento');
             $installments_text = self::post('parcelas');
             $day = ctype_digit($day_text) ? (int) $day_text : 0;
@@ -69,7 +71,7 @@ final class DRJ_Ajax {
                 $data['check_' . $sector] = 0;
             }
             DRJ_Students::update($student, $data);
-            return array('msg' => 'Valores salvos. As conferências foram reiniciadas.');
+            return array('msg' => 'Descontos salvos. As conferências foram reiniciadas.', 'student' => DRJ_Students::dashboard_data(DRJ_Students::find((int) $student->id)));
         });
     }
 
@@ -161,7 +163,7 @@ final class DRJ_Ajax {
             }
             try {
                 if (!$wpdb->get_var($wpdb->prepare("SELECT id FROM `$table` WHERE ra = %s LIMIT 1", $ra))) {
-                    $inserted = $wpdb->insert($table, array('ra' => $ra, 'nome_aluno' => mb_strtoupper($name, 'UTF-8'), 'turma' => $class, 'tipo_aluno' => 'novo', 'status_rematricula' => 1, 'data_rematricula' => current_time('mysql'), 'desc_condicional' => 103.00, 'vencimento' => '05', 'parcelas' => 12));
+                    $inserted = $wpdb->insert($table, array('ra' => $ra, 'nome_aluno' => mb_strtoupper($name, 'UTF-8'), 'turma' => $class, 'tipo_aluno' => 'novo', 'status_rematricula' => 1, 'data_rematricula' => current_time('mysql'), 'valor_2027' => DRJ_Pricing::base($class), 'desc_condicional' => DRJ_Pricing::conditional(), 'vencimento' => '05', 'parcelas' => 12));
                     if (!$inserted) {
                         throw new RuntimeException('Não foi possível cadastrar o aluno.');
                     }

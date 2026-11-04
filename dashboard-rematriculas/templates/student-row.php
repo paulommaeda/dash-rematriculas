@@ -13,7 +13,7 @@ $final = $can_manage_financial ? $row['financeiro']['valor_2027'] - array_sum(ar
         <span class="drj-enrollment-status drj-status-badge <?php echo $row['novo'] ? 'drj-badge-new' : ($row['status'] ? 'drj-badge-ok' : 'drj-badge-pend'); ?>"><?php echo $row['novo'] ? 'Novo' : ($row['status'] ? 'Rematriculado' : 'Pendente'); ?></span>
     </td>
     <?php if ($can_manage_financial) : foreach ($row['financeiro'] as $field => $value) : ?>
-        <td><input type="number" min="0" step="0.01" data-financial="<?php echo esc_attr($field); ?>" class="drj-input-fin" value="<?php echo esc_attr(number_format($value, 2, '.', '')); ?>" aria-label="<?php echo esc_attr($field . ' — ' . $row['nome']); ?>" <?php disabled($row['arquivado'], 1); ?>></td>
+        <td><input type="number" min="0" step="0.01" data-financial="<?php echo esc_attr($field); ?>" class="drj-input-fin <?php echo in_array($field, array('valor_2027', 'desc_condicional'), true) ? 'drj-input-fixed' : ''; ?>" value="<?php echo esc_attr(number_format($value, 2, '.', '')); ?>" aria-label="<?php echo esc_attr($field . ' — ' . $row['nome']); ?>" <?php if (in_array($field, array('valor_2027', 'desc_condicional'), true)) : ?>readonly aria-readonly="true" title="Definido no cadastro central de valores gerais"<?php endif; ?> <?php disabled($row['arquivado'], 1); ?>></td>
     <?php endforeach; ?>
     <td><output class="drj-final"><?php echo esc_html(number_format($final, 2, ',', '.')); ?></output></td>
     <td><input type="number" min="1" max="31" step="1" class="drj-input-mini" data-financial="vencimento" value="<?php echo esc_attr($row['vencimento']); ?>" aria-label="Dia do vencimento" <?php disabled($row['arquivado'], 1); ?>></td>

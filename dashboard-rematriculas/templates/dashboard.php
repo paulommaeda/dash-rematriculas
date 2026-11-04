@@ -2,7 +2,7 @@
 <div class="drj-app" data-drj-dashboard>
     <script type="application/json" class="drj-config"><?php echo wp_json_encode($config, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?></script>
     <div class="drj-header">
-        <div><h1>Dashboard de Rematrículas</h1><p>Valores salvos automaticamente. Clique no nome do aluno para ver detalhes e arquivar desistências.</p></div>
+        <div><h1>Dashboard de Rematrículas</h1><p><?php echo $can_manage_financial ? 'Valor base e condicional seguem o cadastro central. Os demais descontos são salvos automaticamente.' : 'Acompanhe matrículas, conferências e observações. Clique no nome para ver detalhes e arquivar desistências.'; ?></p></div>
         <div class="drj-header-actions">
             <button type="button" class="drj-btn-sync" data-action="sync">🔄 Sincronizar Agora</button>
             <?php if ($frontend && !current_user_can('manage_options')) : ?>

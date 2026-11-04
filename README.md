@@ -2,7 +2,7 @@
 
 Plugin WordPress do Colégio Journey, desenvolvido por Paulo Maeda. Painel de acompanhamento de rematrículas, dados financeiros, conferências por setor, integração com Fluent Forms e arquivamento reversível de desistências.
 
-**Versão: 4.3.0** · [Baixar ZIP para instalar](https://raw.githubusercontent.com/paulommaeda/dash-rematriculas/main/dist/dashboard-rematriculas-4.3.0.zip)
+**Versão: 4.4.0** · [Baixar ZIP para instalar](https://raw.githubusercontent.com/paulommaeda/dash-rematriculas/main/dist/dashboard-rematriculas-4.4.0.zip)
 
 ## Instalação
 
@@ -28,6 +28,20 @@ A sessão e o token do acompanhamento não autorizam consultas financeiras. O ac
 
 Remover uma conta autorizada revoga seu acesso nas próximas consultas. Trocar a senha financeira invalida suas sessões anteriores. Desativar o acesso por senha também revoga essas sessões, inclusive se a opção for reativada depois. A sessão financeira usa cookie próprio com validade de oito horas e pode ser encerrada sem sair do acompanhamento. Também é possível definir `DRJ_FINANCE_PASSWORD` no `wp-config.php` para administrar a senha fora do painel.
 
+## Valor base por curso e condicional único
+
+Em **Dash Rematrículas → Configurações → Valor base por curso e desconto condicional**, cadastre os valores de referência e clique em **Salvar e aplicar a todos**.
+
+- O valor base é único por curso e é usado por todos os alunos daquele curso, incluindo novos cadastros.
+- O desconto condicional é um valor único para todos os cursos e alunos.
+- Mudar a turma faz o aluno assumir o valor base do curso de destino.
+- Os dois campos aparecem somente para consulta no dashboard. O salvamento individual ignora tentativas de sobrescrevê-los, mesmo por requisição direta.
+- Incondicional, indicação, irmãos, vencimento e parcelas continuam individuais e sujeitos à permissão financeira.
+
+Os dois painéis usam a mesma configuração central, inclusive nos totais por contrato. Valores individuais antigos desses dois campos não criam exceções à regra central. Os valores iniciais seguem as referências originais: R$ 1.350,00 para Fundamental I, R$ 1.290,00 para Fundamental II e R$ 1.520,00 para Médio, com condicional de R$ 103,00. Revise e salve o cadastro com os valores da instituição. Zero é aceito, inclusive para o condicional.
+
+O primeiro cadastro reinicia as quatro conferências. Depois disso, alterar a base reinicia as conferências apenas dos alunos do curso atingido; alterar o condicional reinicia as de todos. Salvar sem mudanças preserva as conferências. Somente administradores podem alterar os valores gerais. A separação de acesso financeiro permanece em vigor.
+
 ## Valores e percentual de bolsa
 
 Os totais por curso, turma e geral apresentam bruto, **desconto incondicional**, indicação, irmãos, desconto condicional e líquido em colunas separadas.
@@ -42,7 +56,7 @@ Os totais por curso, turma e geral apresentam bruto, **desconto incondicional**,
 
 Indicação, irmãos e desconto condicional são deduzidos do líquido e ficam fora do percentual de bolsa. A visão inicial considera rematriculados e alunos novos; os filtros permitem incluir todos em acompanhamento ou somente pendentes e selecionar curso e turma. Arquivados ficam fora dos cálculos.
 
-Os cursos são identificados pelas turmas: Fundamental I, Fundamental II e Ensino Médio, com grupos separados para turmas não reconhecidas. Os números são projeções baseadas nos valores de 2027 cadastrados. No total por contrato, os mesmos valores e descontos são aplicados às parcelas informadas; a base atual não contém cronograma de descontos diferentes por vencimento. O botão **Atualizar dados** consulta os valores mais recentes.
+Os cursos são identificados pelas turmas: Fundamental I, Fundamental II e Ensino Médio, com grupos separados para turmas não reconhecidas. Os números são projeções que usam a base central por curso, o condicional geral e os demais descontos cadastrados por aluno. No total por contrato, os mesmos valores e descontos são aplicados às parcelas informadas; a base atual não contém cronograma de descontos diferentes por vencimento. O botão **Atualizar dados** consulta os valores mais recentes.
 
 ## Atualizações pelo painel
 
@@ -77,6 +91,6 @@ Requisitos: WordPress 6.0+, PHP 7.4+, MySQL/MariaDB e `mbstring`. O arquivamento
 | `dist/` | ZIPs instaláveis por versão |
 | `update.json` | Versão estável, URL e checksum do pacote |
 | `scripts/build_release.py` | Geração determinística do ZIP e do manifesto |
-| `tests/` | Testes do atualizador, cálculos e isolamento de acesso financeiro |
+| `tests/` | Testes do atualizador, cálculos, valores centrais e isolamento financeiro |
 
 O repositório contém apenas código e documentação. Configurações particulares da escola são armazenadas no WordPress e não devem ser incluídas nos commits.

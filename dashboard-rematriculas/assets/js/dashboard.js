@@ -14,7 +14,7 @@
             this.queues = new Map();
             this.timers = new Map();
             this.unsaved = new Set();
-            this.saved = new Map([...this.rows].map(([id, row]) => [id, JSON.stringify(this.financialValues(row))]));
+            this.saved = new Map([...this.rows].map(([id, row]) => [id, JSON.stringify(this.financialValues(row, true))]));
             this.financialPending = new Map();
             this.filterTimer = null;
             this.modalStudent = null;
@@ -68,8 +68,8 @@
             return pending;
         }
 
-        financialValues(row) {
-            return Object.fromEntries([...row.querySelectorAll('[data-financial]')].map(input => [input.dataset.financial, input.value]));
+        financialValues(row, editableOnly = false) {
+            return Object.fromEntries([...row.querySelectorAll('[data-financial]')].filter(input => !editableOnly || !input.readOnly).map(input => [input.dataset.financial, input.value]));
         }
 
         recalculate(row) {
@@ -84,7 +84,7 @@
                 clearTimeout(this.filterTimer);
                 this.filterTimer = setTimeout(() => this.filter(), 120);
             }
-            if (input.matches('[data-financial]')) {
+            if (input.matches('[data-financial]') && !input.readOnly && !input.disabled) {
                 const row = input.closest('[data-student-id]');
                 const id = row.dataset.studentId;
                 this.recalculate(row);
@@ -97,7 +97,7 @@
 
         change(event) {
             if (event.target.matches('[data-filter]')) this.filter();
-            if (event.target.matches('[data-financial]')) {
+            if (event.target.matches('[data-financial]') && !event.target.readOnly && !event.target.disabled) {
                 this.flush(event.target.closest('[data-student-id]').dataset.studentId).catch(() => {});
             }
         }
@@ -107,12 +107,12 @@
             this.timers.delete(id);
             const row = this.rows.get(id);
             if (!this.unsaved.has(id)) return this.queues.get(id);
-            const invalid = [...row.querySelectorAll('[data-financial]')].find(input => !input.validity.valid || input.value === '');
+            const invalid = [...row.querySelectorAll('[data-financial]')].find(input => !input.readOnly && (!input.validity.valid || input.value === ''));
             if (invalid) {
                 row.querySelector('.drj-row-save').textContent = 'Preencha valores válidos para salvar.';
                 throw new Error('Corrija os valores financeiros antes de continuar.');
             }
-            const values = this.financialValues(row);
+            const values = this.financialValues(row, true);
             const snapshot = JSON.stringify(values);
             const existing = this.financialPending.get(id);
             if (existing?.snapshot === snapshot) return existing.promise;
@@ -124,15 +124,17 @@
             const operation = this.enqueue(id, async () => {
                 row.querySelector('.drj-row-save').textContent = 'Salvando…';
                 try {
-                    await this.request('salvar_financeiro', {id, ...values});
+                    const result = await this.request('salvar_financeiro', {id, ...values});
                     this.saved.set(id, snapshot);
                     const student = this.students.get(id);
-                    Object.keys(student.financeiro).forEach(key => { student.financeiro[key] = Number(values[key]); });
+                    student.financeiro = result.student.financeiro;
+                    ['valor_2027', 'desc_condicional'].forEach(key => { row.querySelector(`[data-financial="${key}"]`).value = Number(result.student.financeiro[key]).toFixed(2); });
                     student.vencimento = values.vencimento;
                     student.parcelas = Number(values.parcelas);
+                    this.recalculate(row);
                     row.querySelectorAll('[data-action="check"]').forEach(button => this.setCheck(button, 0));
                     this.rowColor(row);
-                    if (JSON.stringify(this.financialValues(row)) === snapshot) {
+                    if (JSON.stringify(this.financialValues(row, true)) === snapshot) {
                         this.unsaved.delete(id);
                         row.querySelector('.drj-row-save').textContent = 'Salvo';
                     } else {
@@ -271,9 +273,9 @@
                 row.querySelector('.drj-ra').textContent = result.student.ra;
                 row.querySelector('.drj-class').textContent = result.student.turma;
                 row.classList.toggle('drj-linha-atencao', Boolean(result.student.atencao));
-                // O valor base pode mudar com a turma quando ainda usa o preço padrão.
+                // O valor base sempre acompanha o cadastro central do curso da turma.
                 if (this.config.canManageFinancial && result.student.financeiro) Object.entries(result.student.financeiro).forEach(([field, value]) => { row.querySelector(`[data-financial="${field}"]`).value = Number(value).toFixed(2); });
-                this.saved.set(id, JSON.stringify(this.financialValues(row)));
+                this.saved.set(id, JSON.stringify(this.financialValues(row, true)));
                 this.recalculate(row);
                 this.updateClassOptions();
                 this.filter();

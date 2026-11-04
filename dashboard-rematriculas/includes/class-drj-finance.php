@@ -61,19 +61,11 @@ final class DRJ_Finance {
     }
 
     public static function course_labels() {
-        return array('EFI' => 'Ensino Fundamental I', 'EFII' => 'Ensino Fundamental II', 'EM' => 'Ensino Médio', 'EF' => 'Ensino Fundamental · ciclo não informado', 'OUTRO' => 'Não classificado');
+        return DRJ_Pricing::labels();
     }
 
     public static function course($class) {
-        $plain = strtoupper(remove_accents(trim($class)));
-        if (strpos($plain, 'SERIE') !== false) return 'EM';
-        if (strpos($plain, 'ANO') !== false) {
-            if (!preg_match('/(\d+)/', $plain, $match)) return 'EF';
-            $year = (int) $match[1];
-            if ($year >= 1 && $year <= 5) return 'EFI';
-            if ($year >= 6 && $year <= 9) return 'EFII';
-        }
-        return 'OUTRO';
+        return DRJ_Pricing::course($class);
     }
 
     private static function cents($amount) {
@@ -93,7 +85,7 @@ final class DRJ_Finance {
         global $wpdb;
         $table = DRJ_Database::table();
         // Apenas colunas financeiras necessárias; observações e conferências não são carregadas.
-        $students = $wpdb->get_results("SELECT ra, turma, tipo_aluno, status_rematricula, parcelas, valor_2027, desc_condicional, desc_incondicional, desc_indicacao, desc_irmaos FROM `$table` WHERE arquivado = 0");
+        $students = $wpdb->get_results("SELECT ra, turma, tipo_aluno, status_rematricula, parcelas, desc_incondicional, desc_indicacao, desc_irmaos FROM `$table` WHERE arquivado = 0");
         if ($wpdb->last_error) throw new RuntimeException('Não foi possível consultar os valores.');
         return self::calculate($students ?: array(), $filters);
     }
@@ -118,13 +110,13 @@ final class DRJ_Finance {
             if ($filters['class'] !== '' && ($filters['class'] === '__sem_turma__' ? '' : $filters['class']) !== $class) continue;
             $values = self::empty_total();
             $values['students'] = 1;
-            $base = isset($student->valor_2027) && (float) $student->valor_2027 > 0 ? $student->valor_2027 : DRJ_Students::level($class)['base'];
+            $financial = DRJ_Pricing::financial($student);
             $factor = $filters['basis'] === 'contract' ? ((int) $student->parcelas > 0 ? (int) $student->parcelas : 12) : 1;
-            $values['gross'] = self::cents($base) * $factor;
+            $values['gross'] = self::cents($financial['valor_2027']) * $factor;
             $values['unconditional'] = self::cents($student->desc_incondicional ?? 0) * $factor;
             $values['referral'] = self::cents($student->desc_indicacao ?? 0) * $factor;
             $values['siblings'] = self::cents($student->desc_irmaos ?? 0) * $factor;
-            $values['conditional'] = self::cents($student->desc_condicional ?? 103) * $factor;
+            $values['conditional'] = self::cents($financial['desc_condicional']) * $factor;
             $values['scholarships'] = $values['unconditional'] + $values['referral'] + $values['siblings'];
             $values['net'] = $values['gross'] - $values['scholarships'] - $values['conditional'];
             $values['scholarship_students'] = $values['unconditional'] > 0 ? 1 : 0;

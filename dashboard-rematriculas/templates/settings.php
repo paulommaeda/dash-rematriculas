@@ -1,6 +1,7 @@
 <?php defined('ABSPATH') || exit; ?>
 <div class="wrap drj-settings">
     <h1>Configurações do Dashboard de Rematrículas</h1>
+    <?php include DRJ_PATH . 'templates/pricing-settings.php'; ?>
     <?php if ($saved) : ?><div class="notice notice-success"><p>Configurações salvas.</p></div><?php endif; ?>
     <?php if (!empty($settings_error)) : ?><div class="notice notice-error"><p><?php echo esc_html($settings_error); ?></p></div><?php endif; ?>
     <form method="post">

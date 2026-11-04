@@ -1,4 +1,4 @@
-# Dashboard de Rematrículas Journey · 4.3.0
+# Dashboard de Rematrículas Journey · 4.4.0
 
 ## Instalação e atualização
 
@@ -27,7 +27,7 @@ Campos financeiros e cadastro ficam bloqueados enquanto o aluno estiver arquivad
 
 - Recepção de novos alunos pela ação AJAX `drj_receber_aluno_novo`, com os campos `secret`, `ra`, `nome` e `turma` em `wp-admin/admin-ajax.php`.
 - Conferências de Comercial, Secretaria, Financeiro e TI e seus webhooks personalizáveis para Teams/Power Automate.
-- Valores base de 2027: R$ 1.350,00 no Fundamental I, R$ 1.290,00 no Fundamental II e R$ 1.520,00 no Médio. A referência de capacidade continua em 30 alunos por turma.
+- Valores base por curso e desconto condicional configurados centralmente. Os valores iniciais correspondem às referências anteriores. A capacidade de referência continua em 30 alunos por turma.
 - Descontos, vencimento, parcelas, observações, destaque de atenção e edição de RA/turma.
 - Alterações financeiras reiniciam as quatro conferências, conforme a regra da versão anterior.
 
@@ -60,6 +60,7 @@ As páginas que contêm dados do painel emitem instruções para não usar cache
 | `includes/class-drj-auth.php` | Acesso ao acompanhamento |
 | `includes/class-drj-finance-auth.php` | Permissões, senha e sessão exclusivas do financeiro |
 | `includes/class-drj-finance.php` | Cálculo e renderização financeira |
+| `includes/class-drj-pricing.php` | Valores gerais e aplicação da regra por curso |
 | `includes/class-drj-students.php` | Alunos, valores, arquivamento e histórico |
 | `includes/class-drj-ajax.php` | Recepção e validação das ações |
 | `includes/class-drj-integrations.php` | Fluent Forms e webhooks |
@@ -98,6 +99,18 @@ As tabelas por turma e curso e os totais gerais apresentam bruto, **desconto inc
 
 Indicação, irmãos e desconto condicional reduzem o líquido e não entram no percentual de bolsa. Os cursos são identificados pelas turmas: Fundamental I (1º ao 5º ano), Fundamental II (6º ao 9º ano) e Médio (séries). Turmas sem identificação ficam em grupos separados.
 
-A visão inicial inclui rematriculados e alunos novos. Os filtros permitem considerar todos em acompanhamento ou somente pendentes, além de limitar curso e turma. Arquivados não entram no cálculo. Os valores são projeções baseadas nos dados de 2027 já cadastrados, mantendo as referências de preço por turma quando ainda não foi informado um valor base. No total dos contratos, o desconto cadastrado é aplicado a todas as parcelas; não há cronograma por vencimento na base atual.
+A visão inicial inclui rematriculados e alunos novos. Os filtros permitem considerar todos em acompanhamento ou somente pendentes, além de limitar curso e turma. Arquivados não entram no cálculo. Os valores são projeções com a base central por curso e o condicional único, junto aos demais descontos individuais. No total dos contratos, o desconto cadastrado é aplicado a todas as parcelas; não há cronograma por vencimento na base atual.
 
 O botão **Atualizar dados** consulta os últimos valores salvos. A tela financeira é somente de consulta. Os cálculos em centavos conciliam os totais por turma, curso e geral. Descontos superiores ao bruto são sinalizados e o líquido negativo é mantido para revisão.
+
+## Cadastro central dos valores
+
+Abra **Dash Rematrículas → Configurações → Valor base por curso e desconto condicional**. Informe a base de cada curso e um condicional único e clique em **Salvar e aplicar a todos**. Somente administradores podem alterar esse cadastro.
+
+O valor base é compartilhado por todos os alunos do curso, e o condicional é igual para todos. Os valores iniciais são R$ 1.350,00 para Fundamental I, R$ 1.290,00 para Fundamental II, R$ 1.520,00 para Médio e R$ 103,00 de condicional. Também há referências para Fundamental sem ciclo informado e turmas não classificadas. Revise os valores antes de confirmar o primeiro cadastro. Zero é permitido, inclusive para o desconto condicional.
+
+A base acompanha o curso da turma automaticamente. Alunos existentes, novos e restaurados seguem a referência central. Os dois valores ficam somente para leitura no dashboard; os demais descontos, vencimento e parcelas continuam individuais. O servidor também ignora tentativas de alterar base e condicional pelo salvamento individual.
+
+O primeiro cadastro reinicia as quatro conferências. Em alterações posteriores, mudar a base afeta apenas alunos do curso alterado; mudar o condicional afeta todos. Salvar os mesmos valores não reinicia conferências.
+
+Os painéis sempre consultam a configuração central para esses dois valores. Os campos individuais antigos são mantidos por compatibilidade e deixam de definir preços ou exceções. Integrações PHP podem consultar `DRJ_Pricing::financial($aluno)`, `DRJ_Pricing::base($turma)` e `DRJ_Pricing::conditional()` para obter os valores efetivos. A API de novos alunos já usa esses valores.

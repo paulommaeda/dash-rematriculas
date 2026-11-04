@@ -157,3 +157,8 @@
 @media (max-width:600px) { .drj-app { padding:12px; } .drj-register-grid { grid-template-columns:1fr; } .drj-mod2-body { padding:18px; } .drj-mod2-header { padding:18px; } .drj-views a { flex:1; text-align:center; font-size:12px; } .drj-class-bar { grid-template-columns:85px 1fr 30px; gap:6px; } .drj-level-chart { gap:12px; } }
 .drj-settings input[type=checkbox] { display:inline-block; width:auto; margin:0 6px 0 0; }
 .drj-settings .drj-update-check { max-width:850px; }
+.drj-app .drj-input-fixed { background-color:#e8edf3 !important; color:#64748b !important; cursor:default; border-color:#dce3ec !important; }
+.drj-settings .drj-pricing-settings { max-width:850px; }
+.drj-settings .drj-pricing-table label { margin:0; }
+.drj-settings .drj-pricing-table input[type=number] { max-width:190px; margin:0; }
+.drj-settings .drj-pricing-settings > p { max-width:760px; }
