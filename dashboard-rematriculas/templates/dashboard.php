@@ -1,7 +1,6 @@
 <?php defined('ABSPATH') || exit; ?>
 <div class="drj-app" data-drj-dashboard>
     <script type="application/json" class="drj-config"><?php echo wp_json_encode($config, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?></script>
-    <?php DRJ_Dashboard::navigation('rematriculas', $frontend); ?>
     <div class="drj-header">
         <div><h1>Dashboard de Rematrículas</h1><p>Valores salvos automaticamente. Clique no nome do aluno para ver detalhes e arquivar desistências.</p></div>
         <div class="drj-header-actions">
@@ -42,9 +41,9 @@
     <p class="drj-results" aria-live="polite"></p>
     <div class="drj-table-wrapper">
         <table class="drj-table">
-            <thead><tr><th>RA</th><th>Nome do aluno</th><th>Turma</th><th>Status</th><th>V. base</th><th>Cond.</th><th>Incond.</th><th>Indic.</th><th>Irmãos</th><th>Final</th><th>Venc.</th><th>Parc.</th><th>Conferência</th><th>Ações</th></tr></thead>
+            <thead><tr><th>RA</th><th>Nome do aluno</th><th>Turma</th><th>Status</th><?php if ($can_manage_financial) : ?><th>V. base</th><th>Cond.</th><th>Incond.</th><th>Indic.</th><th>Irmãos</th><th>Final</th><th>Venc.</th><th>Parc.</th><?php endif; ?><th>Conferência</th><th>Ações</th></tr></thead>
             <tbody>
-                <?php foreach ($students as $student) : $row = DRJ_Students::view_data($student); include DRJ_PATH . 'templates/student-row.php'; endforeach; ?>
+                <?php foreach ($students as $student) : $row = DRJ_Students::dashboard_data($student); include DRJ_PATH . 'templates/student-row.php'; endforeach; ?>
             </tbody>
         </table>
         <p class="drj-empty" hidden>Nenhum aluno encontrado nesta visualização.</p>

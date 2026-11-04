@@ -2,7 +2,7 @@
 
 Plugin WordPress do Colégio Journey, desenvolvido por Paulo Maeda. Painel de acompanhamento de rematrículas, dados financeiros, conferências por setor, integração com Fluent Forms e arquivamento reversível de desistências.
 
-**Versão: 4.2.0** · [Baixar ZIP para instalar](https://raw.githubusercontent.com/paulommaeda/dash-rematriculas/main/dist/dashboard-rematriculas-4.2.0.zip)
+**Versão: 4.3.0** · [Baixar ZIP para instalar](https://raw.githubusercontent.com/paulommaeda/dash-rematriculas/main/dist/dashboard-rematriculas-4.3.0.zip)
 
 ## Instalação
 
@@ -14,20 +14,35 @@ O ZIP contém a pasta `dashboard-rematriculas`, preservando o caminho do plugin 
 
 Quem já instalou a versão 4.0 mantém os dados e credenciais. Em uma instalação nova ou atualização direta da versão 3.9, configure a senha do painel e a chave da API em **Dash Rematrículas → Configurações**. A versão pública não contém senhas ou chaves fixas. Também é possível definir `DRJ_DASHBOARD_PASSWORD` e `DRJ_API_SECRET` no `wp-config.php`.
 
-## Dashboard financeiro
+## Financeiro separado e restrito
 
-Abra **Dash Rematrículas → Financeiro**, ou use a aba **Financeiro** na página que já contém `[dash_rematriculas]`. Para uma página dedicada, use `[dash_financeiro]`, com o mesmo acesso restrito.
+O acompanhamento usa `[dash_rematriculas]`. O financeiro tem uma página independente com `[dash_financeiro]` e o menu próprio **Financeiro Journey** no WordPress. A aba compartilhada e o acesso pelo parâmetro da página de acompanhamento foram removidos.
 
-O painel apresenta bruto, bolsas, desconto condicional e líquido no total geral e em tabelas por curso e turma. Os cursos são identificados pelas turmas: Fundamental I, Fundamental II e Ensino Médio. Turmas não reconhecidas ficam separadas.
+Em **Dash Rematrículas → Configurações → Acesso exclusivo ao financeiro**:
 
-- **Por parcela:** soma de uma parcela de cada aluno do filtro.
-- **Total dos contratos:** cada valor é multiplicado pelo número de parcelas do respectivo aluno.
-- **Bolsas:** soma de desconto incondicional, indicação e irmãos.
-- **Líquido:** bruto menos bolsas e desconto condicional.
+- Administradores já têm acesso financeiro.
+- Selecione as outras contas WordPress que podem consultar o financeiro.
+- Se desejar acesso sem conta WordPress, habilite a senha exclusiva e defina uma senha diferente da senha de acompanhamento. Essa opção começa desativada.
 
-A visão inicial considera rematriculados e alunos novos. Os filtros permitem incluir todos em acompanhamento ou somente pendentes, além de selecionar curso e turma. Desistências arquivadas ficam fora dos cálculos. Os gráficos e os totais acompanham os filtros. O botão **Atualizar dados** consulta os últimos valores cadastrados sem alterar registros.
+A sessão e o token do acompanhamento não autorizam consultas financeiras. O acesso comum também não recebe os campos financeiros no HTML, no JSON da lista nem nas respostas de edição de aluno. A gravação de valores exige permissão financeira. Notas, conferências e arquivamento continuam disponíveis no acompanhamento. Contas com acesso financeiro mantêm os campos de edição individual ao acessar o acompanhamento.
 
-Os números são projeções baseadas nos valores de 2027 já cadastrados no plugin. O total por contrato aplica os mesmos valores e descontos a todas as parcelas informadas; não há cronograma de descontos diferentes por vencimento na base atual.
+Remover uma conta autorizada revoga seu acesso nas próximas consultas. Trocar a senha financeira invalida suas sessões anteriores. Desativar o acesso por senha também revoga essas sessões, inclusive se a opção for reativada depois. A sessão financeira usa cookie próprio com validade de oito horas e pode ser encerrada sem sair do acompanhamento. Também é possível definir `DRJ_FINANCE_PASSWORD` no `wp-config.php` para administrar a senha fora do painel.
+
+## Valores e percentual de bolsa
+
+Os totais por curso, turma e geral apresentam bruto, **desconto incondicional**, indicação, irmãos, desconto condicional e líquido em colunas separadas.
+
+| Indicador | Cálculo |
+| --- | --- |
+| Bolsas | Somente descontos incondicionais |
+| % de bolsa | Desconto incondicional ÷ bruto × 100 |
+| Líquido | Bruto − incondicional − indicação − irmãos − condicional |
+| Por parcela | Soma de uma parcela de cada aluno do filtro |
+| Total dos contratos | Cada valor multiplicado pelas parcelas do respectivo aluno |
+
+Indicação, irmãos e desconto condicional são deduzidos do líquido e ficam fora do percentual de bolsa. A visão inicial considera rematriculados e alunos novos; os filtros permitem incluir todos em acompanhamento ou somente pendentes e selecionar curso e turma. Arquivados ficam fora dos cálculos.
+
+Os cursos são identificados pelas turmas: Fundamental I, Fundamental II e Ensino Médio, com grupos separados para turmas não reconhecidas. Os números são projeções baseadas nos valores de 2027 cadastrados. No total por contrato, os mesmos valores e descontos são aplicados às parcelas informadas; a base atual não contém cronograma de descontos diferentes por vencimento. O botão **Atualizar dados** consulta os valores mais recentes.
 
 ## Atualizações pelo painel
 
@@ -62,6 +77,6 @@ Requisitos: WordPress 6.0+, PHP 7.4+, MySQL/MariaDB e `mbstring`. O arquivamento
 | `dist/` | ZIPs instaláveis por versão |
 | `update.json` | Versão estável, URL e checksum do pacote |
 | `scripts/build_release.py` | Geração determinística do ZIP e do manifesto |
-| `tests/` | Testes do atualizador e dos cálculos financeiros com WordPress carregado |
+| `tests/` | Testes do atualizador, cálculos e isolamento de acesso financeiro |
 
 O repositório contém apenas código e documentação. Configurações particulares da escola são armazenadas no WordPress e não devem ser incluídas nos commits.

@@ -4,7 +4,7 @@
     const currency = new Intl.NumberFormat('pt-BR', {style: 'currency', currency: 'BRL'});
     const money = cents => currency.format(cents / 100);
     const percent = (part, whole) => whole > 0 ? `${(part / whole * 100).toLocaleString('pt-BR', {minimumFractionDigits: 1, maximumFractionDigits: 1})}%` : '—';
-    const amounts = ['gross', 'scholarships', 'conditional', 'net'];
+    const amounts = ['gross', 'unconditional', 'referral', 'siblings', 'conditional', 'net'];
 
     class Finance {
         constructor(root) {
@@ -78,7 +78,7 @@
 
         row(values, group) {
             const title = group === 'classes' ? `${escape(values.class || 'Sem turma informada')}<small>${escape(values.course_label)}</small>` : escape(values.label);
-            return `<tr><th scope="row">${title}</th><td>${values.students}</td>${amounts.map(key => `<td${key === 'net' ? ` class="drj-fin-net-cell${values[key] < 0 ? ' is-negative' : ''}"` : ''}>${money(values[key])}</td>`).join('')}<td>${percent(values.scholarships, values.gross)}</td></tr>`;
+            return `<tr><th scope="row">${title}</th><td>${values.students}</td>${amounts.map(key => `<td${key === 'net' ? ` class="drj-fin-net-cell${values[key] < 0 ? ' is-negative' : ''}"` : ''}>${money(values[key])}</td>`).join('')}<td>${percent(values.unconditional, values.gross)}</td></tr>`;
         }
 
         render(report) {
@@ -89,13 +89,13 @@
                 element.textContent = amounts.includes(key) ? money(summary[key]) : summary[key];
                 if (key === 'net') element.classList.toggle('is-negative', summary.net < 0);
             });
-            this.root.querySelector('[data-fin-share]').textContent = percent(summary.scholarships, summary.gross);
+            this.root.querySelector('[data-fin-share]').textContent = percent(summary.unconditional, summary.gross);
             this.root.querySelector('[data-fin-context]').textContent = report.filters.basis === 'contract' ? 'Total dos contratos: cada aluno é multiplicado pelo seu número de parcelas.' : 'Por parcela: soma do valor de uma parcela de cada aluno selecionado.';
             this.root.querySelector('[data-fin-updated]').textContent = report.generated_at;
             this.root.querySelector('.drj-fin-alert').hidden = !summary.over_discount;
             this.root.querySelector('[data-fin-warning]').textContent = summary.over_discount;
             ['courses', 'classes'].forEach(group => {
-                this.root.querySelector(`[data-fin-table="${group}"]`).innerHTML = report[group].length ? report[group].map(values => this.row(values, group)).join('') : '<tr><td colspan="7" class="drj-fin-empty">Nenhum aluno encontrado para os filtros selecionados.</td></tr>';
+                this.root.querySelector(`[data-fin-table="${group}"]`).innerHTML = report[group].length ? report[group].map(values => this.row(values, group)).join('') : '<tr><td colspan="9" class="drj-fin-empty">Nenhum aluno encontrado para os filtros selecionados.</td></tr>';
             });
             this.root.querySelectorAll('[data-fin-total]').forEach(footer => {
                 footer.innerHTML = this.row({...summary, label: 'Total geral filtrado'}, 'courses');

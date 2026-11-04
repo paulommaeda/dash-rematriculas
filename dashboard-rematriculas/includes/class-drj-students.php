@@ -148,4 +148,10 @@ final class DRJ_Students {
             'data_arquivamento' => (string) $student->data_arquivamento,
         );
     }
+
+    public static function dashboard_data($student) {
+        $data = self::view_data($student);
+        if (!DRJ_Finance_Auth::can_access()) unset($data['financeiro'], $data['vencimento'], $data['parcelas']);
+        return $data;
+    }
 }

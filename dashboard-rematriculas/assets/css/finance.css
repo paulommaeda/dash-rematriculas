@@ -17,13 +17,13 @@
 .drj-fin-cards { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:18px; margin-bottom:24px; }
 .drj-fin-card { padding:22px; background:#fff; border:1px solid #e1e6ef; border-radius:12px; box-shadow:0 2px 5px #0f172a03; position:relative; overflow:hidden; }
 .drj-fin-card::before { content:""; position:absolute; top:0; left:0; width:100%; height:4px; background:#5875dc; }
-.drj-fin-card-scholarships::before { background:#9164d9; }
+.drj-fin-card-unconditional::before { background:#9164d9; }
 .drj-fin-card-conditional::before { background:#e6a23c; }
 .drj-fin-card-net::before { background:#12a486; }
 .drj-fin-card h2 { margin:0 0 12px; font-size:12px; color:#64748b; font-weight:700; }
 .drj-fin-card p { margin:0 0 7px; font-size:clamp(20px,2vw,31px); font-weight:800; color:#192946; letter-spacing:-.6px; line-height:1.3; font-variant-numeric:tabular-nums; }
 .drj-fin-card-net p { color:#07866d; }
-.drj-fin-card-scholarships p { color:#7951bb; }
+.drj-fin-card-unconditional p { color:#7951bb; }
 .drj-fin-card span { color:#8490a3; font-size:11px; line-height:1.4; }
 .drj-fin-visuals { display:grid; grid-template-columns:1.5fr 1fr; gap:22px; margin-bottom:28px; }
 .drj-fin-chart-card { border:1px solid #e1e6ef; box-shadow:none; padding:24px; border-radius:12px; }
@@ -54,7 +54,7 @@
 .drj-fin-table-section { margin-bottom:28px; }
 .drj-fin-table-section > .drj-fin-section-heading { margin-bottom:14px; }
 .drj-finance .drj-table-wrapper { border-radius:10px; margin-bottom:0; }
-.drj-finance .drj-fin-table { min-width:880px; font-size:12px; font-variant-numeric:tabular-nums; }
+.drj-finance .drj-fin-table { min-width:1080px; font-size:12px; font-variant-numeric:tabular-nums; }
 .drj-finance .drj-fin-table th:first-child { width:auto; min-width:185px; text-align:left; }
 .drj-finance .drj-fin-table th, .drj-finance .drj-fin-table td { padding:15px 16px; text-align:right; white-space:nowrap; }
 .drj-finance .drj-fin-table tbody th { background:#fff; color:#334155; border-bottom:1px solid #f1f5f9; font-size:12px; font-weight:650; text-transform:none; letter-spacing:0; }

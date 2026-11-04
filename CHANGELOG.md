@@ -1,5 +1,16 @@
 # Histórico de versões
 
+## 4.3.0
+
+- Financeiro separado do acompanhamento, com menu próprio e shortcode exclusivo.
+- Remoção da aba compartilhada e do acesso pelo parâmetro da página de acompanhamento.
+- Autorização de contas WordPress e opção de senha financeira exclusiva, sem usar a sessão comum.
+- Sessões e tokens independentes; revogação por retirada de conta, troca de senha ou desativação do acesso por senha.
+- Dados financeiros removidos do HTML, JSON e respostas de cadastro para quem só possui acesso de acompanhamento.
+- Gravação de valores protegida por permissão financeira.
+- Colunas separadas de desconto incondicional, indicação, irmãos e desconto condicional.
+- Percentual de bolsa calculado exclusivamente por incondicional ÷ bruto × 100; indicação e irmãos continuam deduzidos do líquido.
+
 ## 4.2.0
 
 - Novo dashboard financeiro com bruto, líquido e bolsas por turma, por curso e no total geral.

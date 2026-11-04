@@ -1,4 +1,4 @@
-# Dashboard de Rematrículas Journey · 4.2.0
+# Dashboard de Rematrículas Journey · 4.3.0
 
 ## Instalação e atualização
 
@@ -57,7 +57,9 @@ As páginas que contêm dados do painel emitem instruções para não usar cache
 | --- | --- |
 | `dashboard-rematriculas.php` | Inicialização, hooks e shortcode |
 | `includes/class-drj-database.php` | Estrutura e migrações do banco |
-| `includes/class-drj-auth.php` | Acesso, sessão e validações |
+| `includes/class-drj-auth.php` | Acesso ao acompanhamento |
+| `includes/class-drj-finance-auth.php` | Permissões, senha e sessão exclusivas do financeiro |
+| `includes/class-drj-finance.php` | Cálculo e renderização financeira |
 | `includes/class-drj-students.php` | Alunos, valores, arquivamento e histórico |
 | `includes/class-drj-ajax.php` | Recepção e validação das ações |
 | `includes/class-drj-integrations.php` | Fluent Forms e webhooks |
@@ -74,19 +76,28 @@ A versão 4.1.0 integra o repositório `paulommaeda/dash-rematriculas` ao atuali
 
 O atualizador aceita somente o pacote versionado do repositório e confere sua integridade SHA-256 antes da instalação. A preferência automática não é ativada sem escolha do administrador e respeita as políticas do WordPress e da hospedagem. Os módulos do atualizador ficam em `includes/class-drj-updater.php`.
 
-## Dashboard financeiro
+## Financeiro separado
 
-Abra **Dash Rematrículas → Financeiro** ou a aba **Financeiro** na página atual. O shortcode `[dash_financeiro]` permite criar uma página dedicada, com o mesmo controle de acesso. A aba Rematrículas continua disponível para voltar ao acompanhamento.
+O painel de acompanhamento continua em `[dash_rematriculas]`. O financeiro usa exclusivamente `[dash_financeiro]` em outra página ou o menu **Financeiro Journey** no WordPress. A aba compartilhada e o atalho pelo parâmetro do acompanhamento foram removidos.
 
-Os cartões gerais e as tabelas por curso e turma exibem **bruto**, **bolsas**, **desconto condicional** e **líquido**. Os cursos são identificados pelas turmas: Fundamental I (1º ao 5º ano), Fundamental II (6º ao 9º ano) e Ensino Médio (séries). Turmas sem identificação ficam em grupos separados.
+Administradores têm acesso financeiro por padrão. Autorize outras contas em **Dash Rematrículas → Configurações → Acesso exclusivo ao financeiro**. A senha exclusiva é opcional e vem desativada; para usá-la, habilite a opção e defina uma senha diferente da senha de acompanhamento. A constante `DRJ_FINANCE_PASSWORD` permite configurar essa senha pelo `wp-config.php`.
 
-- Bolsas = desconto incondicional + indicação + irmãos.
-- Líquido = bruto − bolsas − desconto condicional.
-- Por parcela = soma de uma parcela de cada aluno.
-- Total dos contratos = cada valor multiplicado pelo número de parcelas do respectivo aluno.
+A sessão comum não abre o financeiro nem autoriza consultas ou alterações de valores. Usuários sem acesso financeiro não recebem campos de valores no HTML, no JSON do acompanhamento ou nas respostas de edição de aluno. O acompanhamento de matrícula, conferências, anotações e arquivamento continua funcionando. Usuários autorizados mantêm a edição individual de valores no acompanhamento.
 
-A visão inicial inclui rematriculados e alunos novos. Os filtros permitem consultar todos em acompanhamento ou somente pendentes e limitar o relatório a um curso e uma turma. Arquivados não entram nos cálculos. Os totais gerais acompanham os filtros selecionados.
+A sessão financeira por senha dura oito horas, usa cookie e token próprios e pode ser encerrada separadamente. Remover uma conta autorizada bloqueia suas próximas consultas. Trocar a senha ou desativar o acesso por senha revoga as sessões financeiras em andamento. Reativar a opção exige nova autenticação.
 
-O painel usa os valores de 2027 já cadastrados, com a mesma referência de preço por turma utilizada no painel de rematrículas quando o valor base ainda não foi informado. Os valores são projeções contratuais. No total dos contratos, os descontos cadastrados são aplicados a todas as parcelas; a base atual não contém um cronograma de descontos por vencimento.
+## Valores financeiros
 
-O botão **Atualizar dados** consulta os últimos valores salvos. A tela financeira é somente de consulta e não altera cadastros, conferências ou rematrículas. As somas são realizadas em centavos e conciliam os totais por turma, curso e geral. Se os descontos ultrapassarem o bruto, o líquido negativo é exibido e os cadastros são sinalizados para revisão.
+As tabelas por turma e curso e os totais gerais apresentam bruto, **desconto incondicional**, indicação, irmãos, desconto condicional e líquido, cada um em sua coluna.
+
+- Bolsas: somente descontos incondicionais.
+- % de bolsa: desconto incondicional ÷ valor bruto × 100, calculado sobre os totais do grupo filtrado.
+- Líquido: bruto − incondicional − indicação − irmãos − condicional.
+- Por parcela: soma de uma parcela de cada aluno selecionado.
+- Total dos contratos: cada valor multiplicado pelo número de parcelas do respectivo aluno.
+
+Indicação, irmãos e desconto condicional reduzem o líquido e não entram no percentual de bolsa. Os cursos são identificados pelas turmas: Fundamental I (1º ao 5º ano), Fundamental II (6º ao 9º ano) e Médio (séries). Turmas sem identificação ficam em grupos separados.
+
+A visão inicial inclui rematriculados e alunos novos. Os filtros permitem considerar todos em acompanhamento ou somente pendentes, além de limitar curso e turma. Arquivados não entram no cálculo. Os valores são projeções baseadas nos dados de 2027 já cadastrados, mantendo as referências de preço por turma quando ainda não foi informado um valor base. No total dos contratos, o desconto cadastrado é aplicado a todas as parcelas; não há cronograma por vencimento na base atual.
+
+O botão **Atualizar dados** consulta os últimos valores salvos. A tela financeira é somente de consulta. Os cálculos em centavos conciliam os totais por turma, curso e geral. Descontos superiores ao bruto são sinalizados e o líquido negativo é mantido para revisão.

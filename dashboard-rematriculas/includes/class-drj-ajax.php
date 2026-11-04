@@ -49,6 +49,7 @@ final class DRJ_Ajax {
     }
 
     public static function salvar_financeiro() {
+        if (!DRJ_Finance_Auth::can_access()) wp_send_json_error(array('msg' => 'Você não tem permissão para alterar valores financeiros.'), 403);
         self::run(function () {
             $student = self::student();
             $data = array();
@@ -105,7 +106,7 @@ final class DRJ_Ajax {
                 'observacao' => sanitize_textarea_field(self::post('observacao')),
                 'check_atencao' => self::post('check_atencao') === '1' ? 1 : 0,
             ));
-            return array('msg' => 'Alterações salvas.', 'student' => DRJ_Students::view_data(DRJ_Students::find((int) $student->id)));
+            return array('msg' => 'Alterações salvas.', 'student' => DRJ_Students::dashboard_data(DRJ_Students::find((int) $student->id)));
         });
     }
 

@@ -137,7 +137,8 @@ final class DRJ_Auth {
     }
 
     private static function redirect_back() {
-        wp_safe_redirect(wp_get_referer() ?: home_url('/'));
+        $target = isset($_SERVER['REQUEST_URI']) && is_string($_SERVER['REQUEST_URI']) ? wp_unslash($_SERVER['REQUEST_URI']) : home_url('/');
+        wp_safe_redirect($target);
         exit;
     }
 

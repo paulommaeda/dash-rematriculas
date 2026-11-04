@@ -4,7 +4,7 @@ defined('ABSPATH') || exit;
 final class DRJ_Admin {
     public static function menu() {
         add_menu_page('Dashboard Rematrículas', 'Dash Rematrículas', 'manage_options', 'dashboard-rematriculas', array(__CLASS__, 'dashboard'), 'dashicons-chart-pie', 29);
-        add_submenu_page('dashboard-rematriculas', 'Dashboard Financeiro', 'Financeiro', 'manage_options', 'drj-financeiro', array('DRJ_Finance', 'admin'));
+        if (DRJ_Finance_Auth::can_access()) add_menu_page('Dashboard Financeiro', 'Financeiro Journey', 'read', 'drj-financeiro', array('DRJ_Finance', 'admin'), 'dashicons-money-alt', 30);
         add_submenu_page('dashboard-rematriculas', 'Configurações', 'Configurações', 'manage_options', 'drj-configuracoes', array(__CLASS__, 'settings'));
     }
 
@@ -21,8 +21,14 @@ final class DRJ_Admin {
             return;
         }
         $saved = false;
+        $settings_error = '';
         if (isset($_POST['drj_save_templates'])) {
             check_admin_referer('drj_salvar_config', 'drj_webhook_nonce');
+            $settings_error = DRJ_Finance_Auth::settings_error($_POST);
+            if ($settings_error) {
+                include DRJ_PATH . 'templates/settings.php';
+                return;
+            }
             foreach (array('comercial', 'secretaria', 'financeiro', 'ti') as $sector) {
                 $url = isset($_POST['webhook_' . $sector]) && is_string($_POST['webhook_' . $sector]) ? wp_unslash($_POST['webhook_' . $sector]) : '';
                 $template = isset($_POST['tpl_' . $sector]) && is_string($_POST['tpl_' . $sector]) ? wp_unslash($_POST['tpl_' . $sector]) : '';
@@ -43,6 +49,7 @@ final class DRJ_Admin {
             }
             update_option('drj_ff_form_id', isset($_POST['drj_ff_form_id']) ? absint($_POST['drj_ff_form_id']) : 0, false);
             update_option('drj_ff_ra_field', isset($_POST['drj_ff_ra_field']) && is_string($_POST['drj_ff_ra_field']) ? sanitize_text_field(wp_unslash($_POST['drj_ff_ra_field'])) : '', false);
+            DRJ_Finance_Auth::save_settings($_POST);
             $saved = true;
         }
         include DRJ_PATH . 'templates/settings.php';

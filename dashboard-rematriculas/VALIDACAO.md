@@ -1,18 +1,17 @@
-# Validação local · versão 4.2.0
+# Validação local · versão 4.3.0
 
-Ambiente isolado, sem acesso ao banco ou ao servidor do colégio: WordPress 7.1.4, PHP 8.3.6 e MariaDB 10.11.14, com dados sintéticos.
+Ambiente isolado com dados sintéticos: WordPress 7.1.4, PHP 8.3.6 e MariaDB 10.11.14.
 
-- Sintaxe validada nos 15 arquivos PHP do plugin, nos testes PHP de financeiro e atualizador e nos dois arquivos JavaScript.
-- 24 verificações de banco e regras do backend: migração de tabela legada, preservação de colunas extras e descontos zero, arquivamento, restauração, histórico, rollback em falha, recusa de tabela sem transações, sincronização e identificação de aluno novo após troca de RA.
-- 36 verificações HTTP em WordPress: acesso por senha, token vinculado à sessão, validações, proteção de arquivados, integração da API, consulta de desistências, restauração, invalidação da sessão após sair, acesso ao financeiro, filtros e navegação entre painéis.
-- 15 verificações de JavaScript em DOM: filtros, gráficos, nomes e RAs com caracteres especiais, agrupamento de gravações, cálculo, erro de rede e reenvio, conferências e modal.
-- 25 verificações do atualizador: integração com o verificador nativo do WordPress, cache, oferta de versão nova, recusa de downgrade, origem do pacote, conferência SHA-256, recusa de arquivo alterado, recuperação após falha de rede, opção automática e preservação de credenciais existentes.
+- 24 verificações de banco e regras do acompanhamento, incluindo migração, preservação de dados e arquivamento.
+- 25 verificações do atualizador nativo e da integridade dos pacotes.
+- 37 verificações de cálculo financeiro, percentual sobre o incondicional, cursos, turmas e acesso ao shortcode separado.
+- 25 verificações das permissões financeiras: administradores, contas autorizadas, bloqueio de sessão comum, tokens distintos, proteção dos campos e configurações de senha.
+- 39 verificações HTTP dos fluxos de matrícula, acesso e consultas.
+- 29 verificações HTTP de isolamento financeiro: senha comum recusada, login por conta autorizada, revogação de conta e sessão, logout independente, desativação e troca de senha, bloqueio de consulta e edição sem permissão.
+- 5 verificações DOM do acompanhamento sem financeiro: ausência de valores e resumo financeiro, edição de observações e respostas sem dados financeiros.
+- 15 verificações DOM do acompanhamento autorizado, incluindo salvamento automático e reenvio.
+- 22 verificações DOM financeiras: colunas separadas, percentual incondicional, filtros, contratos, tratamento de erros e consultas fora de ordem.
 
-- 33 verificações de cálculo e renderização financeira: bruto, bolsas, condicionais e líquido em centavos; cursos e turmas; confirmação e pendências; arquivados; parcelamentos diferentes; conciliação de totais; valores negativos; turmas sem identificação e acesso por shortcode.
-- 19 verificações da interface financeira em DOM: filtros, cartões, tabelas, gráficos, base por parcela e contrato, consulta vazia, erro de rede, recuperação, escape de texto e cancelamento de consulta anterior.
+Total: **221 verificações funcionais aprovadas**. A sintaxe PHP e JavaScript também foi validada.
 
-Total: **152 verificações funcionais aprovadas**.
-
-Os testes do atualizador simularam as respostas de rede e validaram a entrega do ZIP ao instalador nativo. A publicação do manifesto e do pacote deve ser verificada no repositório depois do envio.
-
-A interface recebeu estilos responsivos e ajustes de acessibilidade. A execução de um navegador gráfico não esteve disponível neste ambiente; a validação da interface foi funcional em DOM. Não houve instalação no site de produção. Tema, cache e integrações externas devem ser conferidos depois da instalação na sua hospedagem.
+Os testes do atualizador simulam as respostas de rede. O manifesto e o pacote público são conferidos após a publicação. A interface foi validada funcionalmente em DOM; não houve validação visual em navegador gráfico nem instalação no servidor de produção.

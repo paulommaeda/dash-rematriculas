@@ -74,6 +74,7 @@
 
         recalculate(row) {
             const values = this.financialValues(row);
+            if (!row.querySelector('.drj-final')) return;
             row.querySelector('.drj-final').textContent = money(Number(values.valor_2027) - ['desc_condicional', 'desc_incondicional', 'desc_indicacao', 'desc_irmaos'].reduce((total, key) => total + Number(values[key] || 0), 0));
         }
 
@@ -212,7 +213,7 @@
                     <fieldset ${archived ? 'disabled' : ''}><legend class="drj-mod2-section-title">Informações do aluno</legend>
                     <div class="drj-register-grid"><label>RA oficial<input class="drj-mod2-input-text" name="novo_ra" maxlength="100" required value="${escape(student.ra)}"></label><label>Turma<input class="drj-mod2-input-text" name="turma" list="drj-class-list" maxlength="100" required value="${escape(student.turma)}"><datalist id="drj-class-list">${this.config.classes.map(value => `<option value="${escape(value)}"></option>`).join('')}</datalist></label></div>
                     ${student.ra.startsWith('NOV-') ? '<p class="drj-muted">RA provisório. A classificação de aluno novo será mantida após a troca pelo RA oficial.</p>' : ''}
-                    <div class="drj-mod2-section-title">Resumo financeiro</div><div class="drj-mod2-fin-box"><div class="drj-mod2-grid">${Object.entries(labels).map(([key, label]) => `<div><div class="drj-mod2-label">${label}</div><div class="drj-mod2-value">R$ ${money(values[key])}</div></div>`).join('')}<div><div class="drj-mod2-label">Vencimento</div><div class="drj-mod2-value">Dia ${escape(values.vencimento)}</div></div><div><div class="drj-mod2-label">Parcelas</div><div class="drj-mod2-value">${escape(values.parcelas)}x</div></div></div><p class="drj-mod2-value">Valor final: R$ ${escape(row.querySelector('.drj-final').textContent)}</p></div>
+                    ${this.config.canManageFinancial ? `<div class="drj-mod2-section-title">Resumo financeiro</div><div class="drj-mod2-fin-box"><div class="drj-mod2-grid">${Object.entries(labels).map(([key, label]) => `<div><div class="drj-mod2-label">${label}</div><div class="drj-mod2-value">R$ ${money(values[key])}</div></div>`).join('')}<div><div class="drj-mod2-label">Vencimento</div><div class="drj-mod2-value">Dia ${escape(values.vencimento)}</div></div><div><div class="drj-mod2-label">Parcelas</div><div class="drj-mod2-value">${escape(values.parcelas)}x</div></div></div><p class="drj-mod2-value">Valor final: R$ ${escape(row.querySelector('.drj-final').textContent)}</p></div>` : ''}
                     <div class="drj-mod2-section-title">Observações</div><label class="drj-checkbox-atencao"><input type="checkbox" name="check_atencao" ${student.atencao ? 'checked' : ''}> Destacar aluno com atenção</label><label>Anotações<textarea name="observacao" class="drj-mod2-textarea">${escape(student.observacao)}</textarea></label>
                     <div class="drj-mod2-footer"><button type="submit" class="drj-mod2-btn">Salvar alterações</button></div></fieldset></form>
                     <section class="drj-archive-section"><h3>${archived ? 'Desistência arquivada' : 'Arquivar desistência'}</h3>
@@ -271,7 +272,7 @@
                 row.querySelector('.drj-class').textContent = result.student.turma;
                 row.classList.toggle('drj-linha-atencao', Boolean(result.student.atencao));
                 // O valor base pode mudar com a turma quando ainda usa o preço padrão.
-                Object.entries(result.student.financeiro).forEach(([field, value]) => { row.querySelector(`[data-financial="${field}"]`).value = Number(value).toFixed(2); });
+                if (this.config.canManageFinancial && result.student.financeiro) Object.entries(result.student.financeiro).forEach(([field, value]) => { row.querySelector(`[data-financial="${field}"]`).value = Number(value).toFixed(2); });
                 this.saved.set(id, JSON.stringify(this.financialValues(row)));
                 this.recalculate(row);
                 this.updateClassOptions();

@@ -9,10 +9,9 @@ final class DRJ_Dashboard {
 
     public static function frontend_assets() {
         global $post;
-        if ($post && ((has_shortcode($post->post_content, 'dash_financeiro') && DRJ_Finance::requested(true)) || (has_shortcode($post->post_content, 'dash_rematriculas') && DRJ_Finance::requested()))) {
-            DRJ_Finance::assets();
-        } elseif ($post && (has_shortcode($post->post_content, 'dash_rematriculas') || has_shortcode($post->post_content, 'dash_financeiro'))) {
-            self::assets();
+        if ($post) {
+            if (has_shortcode($post->post_content, 'dash_rematriculas')) self::assets();
+            if (has_shortcode($post->post_content, 'dash_financeiro')) DRJ_Finance::assets();
         }
     }
 
@@ -27,7 +26,6 @@ final class DRJ_Dashboard {
     }
 
     public static function shortcode() {
-        if (DRJ_Finance::requested()) return DRJ_Finance::shortcode();
         DRJ_Auth::no_cache();
         self::assets();
         // Builders podem renderizar shortcodes depois de wp_head().
@@ -63,29 +61,17 @@ final class DRJ_Dashboard {
         }
         $classes = array();
         $data = array();
+        $can_manage_financial = DRJ_Finance_Auth::can_access();
         foreach ($students as $student) {
             $classes[$student->turma] = true;
-            $data[] = DRJ_Students::view_data($student);
+            $data[] = DRJ_Students::dashboard_data($student);
         }
         $classes = array_keys($classes);
         sort($classes, SORT_NATURAL | SORT_FLAG_CASE);
-        $config = array('ajaxUrl' => admin_url('admin-ajax.php'), 'nonce' => DRJ_Auth::nonce(), 'students' => $data, 'classes' => $classes, 'view' => $view);
+        $config = array('ajaxUrl' => admin_url('admin-ajax.php'), 'nonce' => DRJ_Auth::nonce(), 'students' => $data, 'classes' => $classes, 'view' => $view, 'canManageFinancial' => $can_manage_financial);
         ob_start();
         include DRJ_PATH . 'templates/dashboard.php';
         return ob_get_clean();
     }
 
-    public static function navigation($current, $frontend = false) {
-        if ($frontend) {
-            $base = remove_query_arg(array('drj_painel', 'drj_visualizacao', 'drj_fin_basis', 'drj_fin_scope', 'drj_fin_course', 'drj_fin_class'));
-            $urls = array('rematriculas' => add_query_arg('drj_painel', 'rematriculas', $base), 'financeiro' => add_query_arg('drj_painel', 'financeiro', $base));
-        } else {
-            $urls = array('rematriculas' => admin_url('admin.php?page=dashboard-rematriculas'), 'financeiro' => admin_url('admin.php?page=drj-financeiro'));
-        }
-        echo '<nav class="drj-panel-nav" aria-label="Painéis de acompanhamento">';
-        foreach (array('rematriculas' => 'Rematrículas', 'financeiro' => 'Financeiro') as $key => $label) {
-            echo '<a href="' . esc_url($urls[$key]) . '"' . ($current === $key ? ' class="is-current" aria-current="page"' : '') . '>' . esc_html($label) . '</a>';
-        }
-        echo '</nav>';
-    }
 }

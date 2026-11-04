@@ -10,11 +10,6 @@ final class DRJ_Finance {
         add_action('wp_ajax_nopriv_drj_finance_report', array(__CLASS__, 'ajax'));
     }
 
-    public static function requested($default = false) {
-        $panel = isset($_GET['drj_painel']) && is_string($_GET['drj_painel']) ? $_GET['drj_painel'] : '';
-        return $panel === 'financeiro' || ($default && $panel !== 'rematriculas');
-    }
-
     public static function assets() {
         wp_enqueue_style('drj-dashboard', DRJ_URL . 'assets/css/dashboard.css', array(), DRJ_VERSION);
         wp_enqueue_style('drj-finance', DRJ_URL . 'assets/css/finance.css', array('drj-dashboard'), DRJ_VERSION);
@@ -26,13 +21,12 @@ final class DRJ_Finance {
     }
 
     public static function shortcode() {
-        if (!self::requested(true)) return DRJ_Dashboard::shortcode();
         DRJ_Auth::no_cache();
         self::assets();
         ob_start();
         if (!wp_style_is('drj-finance', 'done')) wp_print_styles(array('drj-dashboard', 'drj-finance'));
-        if (!DRJ_Auth::can_access()) {
-            include DRJ_PATH . 'templates/login.php';
+        if (!DRJ_Finance_Auth::can_access()) {
+            include DRJ_PATH . 'templates/finance-login.php';
         } else {
             echo self::render(true);
         }
@@ -40,7 +34,7 @@ final class DRJ_Finance {
     }
 
     public static function render($frontend = false) {
-        if (!DRJ_Auth::can_access()) return '<p>Acesso restrito ao painel.</p>';
+        if (!DRJ_Finance_Auth::can_access()) return '<p>Acesso financeiro não autorizado.</p>';
         if (!DRJ_Database::ready()) return '<p>Não foi possível preparar o banco do painel. Consulte o administrador.</p>';
         self::assets();
         try {
@@ -48,7 +42,7 @@ final class DRJ_Finance {
         } catch (Throwable $error) {
             return '<p>Não foi possível consultar o financeiro. Tente novamente.</p>';
         }
-        $config = array('ajaxUrl' => admin_url('admin-ajax.php'), 'nonce' => DRJ_Auth::nonce(), 'report' => $report);
+        $config = array('ajaxUrl' => admin_url('admin-ajax.php'), 'nonce' => DRJ_Finance_Auth::nonce(), 'report' => $report);
         ob_start();
         include DRJ_PATH . 'templates/finance.php';
         return ob_get_clean();
@@ -133,7 +127,7 @@ final class DRJ_Finance {
             $values['conditional'] = self::cents($student->desc_condicional ?? 103) * $factor;
             $values['scholarships'] = $values['unconditional'] + $values['referral'] + $values['siblings'];
             $values['net'] = $values['gross'] - $values['scholarships'] - $values['conditional'];
-            $values['scholarship_students'] = $values['scholarships'] > 0 ? 1 : 0;
+            $values['scholarship_students'] = $values['unconditional'] > 0 ? 1 : 0;
             $values['over_discount'] = $values['net'] < 0 ? 1 : 0;
             self::add($summary, $values);
             if (!isset($courses[$course])) $courses[$course] = self::empty_total();
@@ -167,7 +161,7 @@ final class DRJ_Finance {
     }
 
     public static function ajax() {
-        DRJ_Auth::authorize();
+        DRJ_Finance_Auth::authorize();
         try {
             wp_send_json_success(array('report' => self::report(self::filters($_POST))));
         } catch (Throwable $error) {

@@ -157,6 +157,3 @@
 @media (max-width:600px) { .drj-app { padding:12px; } .drj-register-grid { grid-template-columns:1fr; } .drj-mod2-body { padding:18px; } .drj-mod2-header { padding:18px; } .drj-views a { flex:1; text-align:center; font-size:12px; } .drj-class-bar { grid-template-columns:85px 1fr 30px; gap:6px; } .drj-level-chart { gap:12px; } }
 .drj-settings input[type=checkbox] { display:inline-block; width:auto; margin:0 6px 0 0; }
 .drj-settings .drj-update-check { max-width:850px; }
-.drj-panel-nav { display:flex; flex-wrap:wrap; gap:6px; margin:0 0 22px; padding:4px; width:fit-content; border:1px solid #dbe1ec; border-radius:10px; background:#eef1f7; }
-.drj-panel-nav a { display:block; padding:8px 20px; color:#64748b; text-decoration:none; font-size:13px; font-weight:700; border-radius:7px; }
-.drj-panel-nav a.is-current { color:#3730a3; background:#fff; box-shadow:0 1px 4px #0f172a14; }
