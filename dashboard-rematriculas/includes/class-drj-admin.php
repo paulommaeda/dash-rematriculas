@@ -4,6 +4,7 @@ defined('ABSPATH') || exit;
 final class DRJ_Admin {
     public static function menu() {
         add_menu_page('Dashboard Rematrículas', 'Dash Rematrículas', 'manage_options', 'dashboard-rematriculas', array(__CLASS__, 'dashboard'), 'dashicons-chart-pie', 29);
+        add_submenu_page('dashboard-rematriculas', 'Dashboard Financeiro', 'Financeiro', 'manage_options', 'drj-financeiro', array('DRJ_Finance', 'admin'));
         add_submenu_page('dashboard-rematriculas', 'Configurações', 'Configurações', 'manage_options', 'drj-configuracoes', array(__CLASS__, 'settings'));
     }
 

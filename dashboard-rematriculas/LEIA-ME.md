@@ -1,4 +1,4 @@
-# Dashboard de Rematrículas Journey · 4.1.0
+# Dashboard de Rematrículas Journey · 4.2.0
 
 ## Instalação e atualização
 
@@ -73,3 +73,20 @@ O pacote não acessa nem altera seu servidor durante a preparação. A migraçã
 A versão 4.1.0 integra o repositório `paulommaeda/dash-rematriculas` ao atualizador nativo. Após instalar esta versão, use **Plugins** ou **Painel → Atualizações**. Para instalação automática, marque a opção correspondente nas configurações e salve; a configuração é compartilhada com o botão nativo da lista de plugins. **Verificar atualizações agora** consulta a versão sem esperar o cache de seis horas.
 
 O atualizador aceita somente o pacote versionado do repositório e confere sua integridade SHA-256 antes da instalação. A preferência automática não é ativada sem escolha do administrador e respeita as políticas do WordPress e da hospedagem. Os módulos do atualizador ficam em `includes/class-drj-updater.php`.
+
+## Dashboard financeiro
+
+Abra **Dash Rematrículas → Financeiro** ou a aba **Financeiro** na página atual. O shortcode `[dash_financeiro]` permite criar uma página dedicada, com o mesmo controle de acesso. A aba Rematrículas continua disponível para voltar ao acompanhamento.
+
+Os cartões gerais e as tabelas por curso e turma exibem **bruto**, **bolsas**, **desconto condicional** e **líquido**. Os cursos são identificados pelas turmas: Fundamental I (1º ao 5º ano), Fundamental II (6º ao 9º ano) e Ensino Médio (séries). Turmas sem identificação ficam em grupos separados.
+
+- Bolsas = desconto incondicional + indicação + irmãos.
+- Líquido = bruto − bolsas − desconto condicional.
+- Por parcela = soma de uma parcela de cada aluno.
+- Total dos contratos = cada valor multiplicado pelo número de parcelas do respectivo aluno.
+
+A visão inicial inclui rematriculados e alunos novos. Os filtros permitem consultar todos em acompanhamento ou somente pendentes e limitar o relatório a um curso e uma turma. Arquivados não entram nos cálculos. Os totais gerais acompanham os filtros selecionados.
+
+O painel usa os valores de 2027 já cadastrados, com a mesma referência de preço por turma utilizada no painel de rematrículas quando o valor base ainda não foi informado. Os valores são projeções contratuais. No total dos contratos, os descontos cadastrados são aplicados a todas as parcelas; a base atual não contém um cronograma de descontos por vencimento.
+
+O botão **Atualizar dados** consulta os últimos valores salvos. A tela financeira é somente de consulta e não altera cadastros, conferências ou rematrículas. As somas são realizadas em centavos e conciliam os totais por turma, curso e geral. Se os descontos ultrapassarem o bruto, o líquido negativo é exibido e os cadastros são sinalizados para revisão.

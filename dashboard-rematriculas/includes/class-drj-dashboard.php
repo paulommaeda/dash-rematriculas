@@ -9,18 +9,25 @@ final class DRJ_Dashboard {
 
     public static function frontend_assets() {
         global $post;
-        if ($post && has_shortcode($post->post_content, 'dash_rematriculas')) {
+        if ($post && ((has_shortcode($post->post_content, 'dash_financeiro') && DRJ_Finance::requested(true)) || (has_shortcode($post->post_content, 'dash_rematriculas') && DRJ_Finance::requested()))) {
+            DRJ_Finance::assets();
+        } elseif ($post && (has_shortcode($post->post_content, 'dash_rematriculas') || has_shortcode($post->post_content, 'dash_financeiro'))) {
             self::assets();
         }
     }
 
     public static function admin_assets($hook) {
+        if (strpos($hook, 'drj-financeiro') !== false) {
+            DRJ_Finance::assets();
+            return;
+        }
         if (strpos($hook, 'dashboard-rematriculas') !== false || strpos($hook, 'drj-configuracoes') !== false) {
             self::assets();
         }
     }
 
     public static function shortcode() {
+        if (DRJ_Finance::requested()) return DRJ_Finance::shortcode();
         DRJ_Auth::no_cache();
         self::assets();
         // Builders podem renderizar shortcodes depois de wp_head().
@@ -66,5 +73,19 @@ final class DRJ_Dashboard {
         ob_start();
         include DRJ_PATH . 'templates/dashboard.php';
         return ob_get_clean();
+    }
+
+    public static function navigation($current, $frontend = false) {
+        if ($frontend) {
+            $base = remove_query_arg(array('drj_painel', 'drj_visualizacao', 'drj_fin_basis', 'drj_fin_scope', 'drj_fin_course', 'drj_fin_class'));
+            $urls = array('rematriculas' => add_query_arg('drj_painel', 'rematriculas', $base), 'financeiro' => add_query_arg('drj_painel', 'financeiro', $base));
+        } else {
+            $urls = array('rematriculas' => admin_url('admin.php?page=dashboard-rematriculas'), 'financeiro' => admin_url('admin.php?page=drj-financeiro'));
+        }
+        echo '<nav class="drj-panel-nav" aria-label="Painéis de acompanhamento">';
+        foreach (array('rematriculas' => 'Rematrículas', 'financeiro' => 'Financeiro') as $key => $label) {
+            echo '<a href="' . esc_url($urls[$key]) . '"' . ($current === $key ? ' class="is-current" aria-current="page"' : '') . '>' . esc_html($label) . '</a>';
+        }
+        echo '</nav>';
     }
 }

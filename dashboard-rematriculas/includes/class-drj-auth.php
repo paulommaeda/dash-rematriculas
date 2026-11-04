@@ -83,7 +83,7 @@ final class DRJ_Auth {
 
     public static function handle_request() {
         global $post;
-        if ($post && has_shortcode($post->post_content, 'dash_rematriculas')) {
+        if ($post && (has_shortcode($post->post_content, 'dash_rematriculas') || has_shortcode($post->post_content, 'dash_financeiro'))) {
             self::no_cache();
         }
         if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST' || !isset($_POST['drj_auth_action']) || !is_string($_POST['drj_auth_action'])) {

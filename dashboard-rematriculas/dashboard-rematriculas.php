@@ -2,8 +2,8 @@
 /**
  * Plugin Name: Dashboard de Rematrículas Journey
  * Plugin URI: https://github.com/paulommaeda/dash-rematriculas
- * Description: Painel de rematrículas, conferências, integração e arquivamento reversível de desistências.
- * Version: 4.1.0
+ * Description: Painéis de rematrículas e financeiro, conferências, integração e arquivamento reversível de desistências.
+ * Version: 4.2.0
  * Author: Paulo Maeda
  * Requires at least: 6.0
  * Requires PHP: 7.4
@@ -13,13 +13,13 @@
 
 defined('ABSPATH') || exit;
 
-define('DRJ_VERSION', '4.1.0');
+define('DRJ_VERSION', '4.2.0');
 define('DRJ_DB_VERSION', '4.0.0');
 define('DRJ_FILE', __FILE__);
 define('DRJ_PATH', plugin_dir_path(__FILE__));
 define('DRJ_URL', plugin_dir_url(__FILE__));
 
-foreach (array('database', 'auth', 'students', 'integrations', 'ajax', 'dashboard', 'admin', 'updater') as $module) {
+foreach (array('database', 'auth', 'students', 'integrations', 'ajax', 'dashboard', 'finance', 'admin', 'updater') as $module) {
     require_once DRJ_PATH . 'includes/class-drj-' . $module . '.php';
 }
 
@@ -31,7 +31,9 @@ add_action('admin_notices', array('DRJ_Database', 'notice'));
 add_action('wp_enqueue_scripts', array('DRJ_Dashboard', 'frontend_assets'));
 add_action('admin_enqueue_scripts', array('DRJ_Dashboard', 'admin_assets'));
 add_shortcode('dash_rematriculas', array('DRJ_Dashboard', 'shortcode'));
+add_shortcode('dash_financeiro', array('DRJ_Finance', 'shortcode'));
 DRJ_Ajax::register();
+DRJ_Finance::register();
 DRJ_Updater::register();
 add_action('admin_notices', array('DRJ_Auth', 'setup_notice'));
 

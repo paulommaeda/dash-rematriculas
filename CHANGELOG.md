@@ -1,5 +1,14 @@
 # Histórico de versões
 
+## 4.2.0
+
+- Novo dashboard financeiro com bruto, líquido e bolsas por turma, por curso e no total geral.
+- Alternância entre valores por parcela e total dos contratos, respeitando o parcelamento de cada aluno.
+- Bolsas incondicionais, de indicação e de irmãos separadas do desconto condicional.
+- Filtros por situação da matrícula, curso e turma, gráficos e atualização dos dados sem recarregar a página.
+- Acesso pelo submenu Financeiro, pela aba do painel existente e pelo shortcode `[dash_financeiro]`.
+- Cálculos em centavos e exclusão das desistências arquivadas.
+
 ## 4.1.0
 
 - Atualizações integradas ao painel nativo do WordPress a partir deste repositório.

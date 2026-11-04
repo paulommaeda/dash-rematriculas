@@ -17,8 +17,10 @@ function drj_assert($condition, $label) {
 $release_root = dirname(__DIR__);
 $original = json_decode(file_get_contents($release_root . '/update.json'), true);
 $fixture = $original;
-$fixture['version'] = '4.2.0';
-$fixture['download_url'] = DRJ_Updater::RAW . 'dist/dashboard-rematriculas-4.2.0.zip';
+$version_parts = explode('.', DRJ_VERSION);
+$next_version = $version_parts[0] . '.' . ((int) $version_parts[1] + 1) . '.0';
+$fixture['version'] = $next_version;
+$fixture['download_url'] = DRJ_Updater::RAW . 'dist/dashboard-rematriculas-' . $next_version . '.zip';
 $package_path = $release_root . '/dist/dashboard-rematriculas-' . $original['version'] . '.zip';
 $transport_error = false;
 $corrupt = false;
@@ -46,10 +48,10 @@ $plugin = plugin_basename(DRJ_FILE);
 try {
     delete_site_transient(DRJ_Updater::CACHE_KEY);
     delete_site_transient('drj_update_backoff');
-    drj_assert(DRJ_VERSION === '4.1.0', 'cabeçalho e módulo carregam versão 4.1.0');
+    drj_assert(DRJ_VERSION === $original['version'], 'cabeçalho e manifesto carregam a mesma versão');
     drj_assert(DRJ_Database::ready(), 'mudança de versão do plugin preserva versão do banco');
     $update = apply_filters('update_plugins_github.com', false, array(), $plugin, array('pt_BR'));
-    drj_assert($update['version'] === '4.2.0' && $update['package'] === $fixture['download_url'], 'hook nativo recebe nova versão e pacote');
+    drj_assert($update['version'] === $next_version && $update['package'] === $fixture['download_url'], 'hook nativo recebe nova versão e pacote');
     DRJ_Updater::manifest();
     drj_assert($manifest_calls === 1, 'consultas de versão usam cache');
     $foreign = array('version' => '9.9.9');
@@ -57,9 +59,9 @@ try {
     delete_site_transient('update_plugins');
     wp_update_plugins();
     $updates = get_site_transient('update_plugins');
-    drj_assert(isset($updates->response[$plugin]) && $updates->response[$plugin]->new_version === '4.2.0', 'WordPress reconhece oferta em Painel Atualizações');
+    drj_assert(isset($updates->response[$plugin]) && $updates->response[$plugin]->new_version === $next_version, 'WordPress reconhece oferta em Painel Atualizações');
     $info = DRJ_Updater::plugin_info(false, 'plugin_information', (object) array('slug' => 'dashboard-rematriculas'));
-    drj_assert($info->version === '4.2.0' && $info->external, 'janela de detalhes apresenta versão do GitHub');
+    drj_assert($info->version === $next_version && $info->external, 'janela de detalhes apresenta versão do GitHub');
     drj_assert(DRJ_Updater::plugin_info('preservado', 'plugin_information', (object) array('slug' => 'outro')) === 'preservado', 'janela de detalhes de outro plugin permanece intacta');
     $downloaded = apply_filters('upgrader_pre_download', false, $fixture['download_url'], null, array('plugin' => $plugin));
     drj_assert(is_string($downloaded) && is_file($downloaded) && hash_file('sha256', $downloaded) === $fixture['sha256'], 'download válido passa pela verificação SHA-256');

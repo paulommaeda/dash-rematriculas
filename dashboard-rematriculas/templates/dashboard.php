@@ -1,6 +1,7 @@
 <?php defined('ABSPATH') || exit; ?>
 <div class="drj-app" data-drj-dashboard>
     <script type="application/json" class="drj-config"><?php echo wp_json_encode($config, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?></script>
+    <?php DRJ_Dashboard::navigation('rematriculas', $frontend); ?>
     <div class="drj-header">
         <div><h1>Dashboard de Rematrículas</h1><p>Valores salvos automaticamente. Clique no nome do aluno para ver detalhes e arquivar desistências.</p></div>
         <div class="drj-header-actions">
