@@ -49,7 +49,6 @@ final class DRJ_Ajax {
     }
 
     public static function salvar_financeiro() {
-        if (!DRJ_Finance_Auth::can_access()) wp_send_json_error(array('msg' => 'Você não tem permissão para alterar valores financeiros.'), 403);
         self::run(function () {
             $student = self::student();
             $data = array();

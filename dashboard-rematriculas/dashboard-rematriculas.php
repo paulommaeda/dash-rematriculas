@@ -3,7 +3,7 @@
  * Plugin Name: Dashboard de Rematrículas Journey
  * Plugin URI: https://github.com/paulommaeda/dash-rematriculas
  * Description: Painéis de rematrículas e financeiro, conferências, integração e arquivamento reversível de desistências.
- * Version: 4.4.0
+ * Version: 4.4.1
  * Author: Paulo Maeda
  * Requires at least: 6.0
  * Requires PHP: 7.4
@@ -13,7 +13,7 @@
 
 defined('ABSPATH') || exit;
 
-define('DRJ_VERSION', '4.4.0');
+define('DRJ_VERSION', '4.4.1');
 define('DRJ_DB_VERSION', '4.0.0');
 define('DRJ_FILE', __FILE__);
 define('DRJ_PATH', plugin_dir_path(__FILE__));

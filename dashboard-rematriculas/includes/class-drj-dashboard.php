@@ -61,7 +61,9 @@ final class DRJ_Dashboard {
         }
         $classes = array();
         $data = array();
-        $can_manage_financial = DRJ_Finance_Auth::can_access();
+        // Valores individuais pertencem à conferência comercial. O dashboard
+        // financeiro agregado mantém sua autorização própria em DRJ_Finance.
+        $can_manage_financial = DRJ_Auth::can_access();
         foreach ($students as $student) {
             $classes[$student->turma] = true;
             $data[] = DRJ_Students::dashboard_data($student);

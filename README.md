@@ -2,7 +2,7 @@
 
 Plugin WordPress do Colégio Journey, desenvolvido por Paulo Maeda. Painel de acompanhamento de rematrículas, dados financeiros, conferências por setor, integração com Fluent Forms e arquivamento reversível de desistências.
 
-**Versão: 4.4.0** · [Baixar ZIP para instalar](https://raw.githubusercontent.com/paulommaeda/dash-rematriculas/main/dist/dashboard-rematriculas-4.4.0.zip)
+**Versão: 4.4.1** · [Baixar ZIP para instalar](https://raw.githubusercontent.com/paulommaeda/dash-rematriculas/main/dist/dashboard-rematriculas-4.4.1.zip)
 
 ## Instalação
 
@@ -24,7 +24,7 @@ Em **Dash Rematrículas → Configurações → Acesso exclusivo ao financeiro**
 - Selecione as outras contas WordPress que podem consultar o financeiro.
 - Se desejar acesso sem conta WordPress, habilite a senha exclusiva e defina uma senha diferente da senha de acompanhamento. Essa opção começa desativada.
 
-A sessão e o token do acompanhamento não autorizam consultas financeiras. O acesso comum também não recebe os campos financeiros no HTML, no JSON da lista nem nas respostas de edição de aluno. A gravação de valores exige permissão financeira. Notas, conferências e arquivamento continuam disponíveis no acompanhamento. Contas com acesso financeiro mantêm os campos de edição individual ao acessar o acompanhamento.
+O acesso ao acompanhamento inclui os valores individuais de cada aluno para validação comercial: base, condicional, demais descontos, líquido, vencimento e parcelas. O comercial pode conferir e ajustar os descontos individuais sem obter acesso ao dashboard financeiro consolidado. Base e condicional permanecem somente para consulta, conforme o cadastro central. O relatório agregado e suas consultas continuam exigindo a autorização financeira própria, com sessão e token separados. Não há aba ou atalho para o dashboard financeiro no acompanhamento.
 
 Remover uma conta autorizada revoga seu acesso nas próximas consultas. Trocar a senha financeira invalida suas sessões anteriores. Desativar o acesso por senha também revoga essas sessões, inclusive se a opção for reativada depois. A sessão financeira usa cookie próprio com validade de oito horas e pode ser encerrada sem sair do acompanhamento. Também é possível definir `DRJ_FINANCE_PASSWORD` no `wp-config.php` para administrar a senha fora do painel.
 
@@ -36,7 +36,7 @@ Em **Dash Rematrículas → Configurações → Valor base por curso e desconto 
 - O desconto condicional é um valor único para todos os cursos e alunos.
 - Mudar a turma faz o aluno assumir o valor base do curso de destino.
 - Os dois campos aparecem somente para consulta no dashboard. O salvamento individual ignora tentativas de sobrescrevê-los, mesmo por requisição direta.
-- Incondicional, indicação, irmãos, vencimento e parcelas continuam individuais e sujeitos à permissão financeira.
+- Incondicional, indicação, irmãos, vencimento e parcelas continuam individuais e podem ser ajustados pela equipe com acesso ao acompanhamento.
 
 Os dois painéis usam a mesma configuração central, inclusive nos totais por contrato. Valores individuais antigos desses dois campos não criam exceções à regra central. Os valores iniciais seguem as referências originais: R$ 1.350,00 para Fundamental I, R$ 1.290,00 para Fundamental II e R$ 1.520,00 para Médio, com condicional de R$ 103,00. Revise e salve o cadastro com os valores da instituição. Zero é aceito, inclusive para o condicional.
 

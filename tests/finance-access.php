@@ -42,9 +42,9 @@ try {
     $_GET = array('drj_painel' => 'financeiro');
     $html = DRJ_Dashboard::shortcode();
     drj_access_check(strpos($html, 'data-drj-finance') === false && strpos($html, 'drj-panel-nav') === false, 'acompanhamento não expõe aba ou atalho de URL para financeiro');
-    drj_access_check(strpos($html, 'data-financial=') === false && strpos($html, '"financeiro":{') === false, 'valores financeiros não são enviados no HTML e JSON do acompanhamento');
+    drj_access_check(strpos($html, 'data-financial=') !== false && strpos($html, '"financeiro":{') !== false, 'acompanhamento comercial recebe valores individuais sem liberar dashboard financeiro');
     $student = DRJ_Students::find(1);
-    drj_access_check(!isset(DRJ_Students::dashboard_data($student)['financeiro']), 'resposta de cadastro de aluno é filtrada para acesso comum');
+    drj_access_check(isset(DRJ_Students::dashboard_data($student)['financeiro']), 'resposta de cadastro mantém valores para conferência comercial');
     drj_access_check(strpos(DRJ_Finance::shortcode(), 'drj-finance-login') !== false, 'página financeira pede autorização própria');
     drj_access_check(strpos(DRJ_Finance::render(), 'drj-finance-config') === false, 'renderizador financeiro bloqueia sessão comum');
     wp_set_current_user(1);

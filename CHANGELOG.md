@@ -1,5 +1,12 @@
 # Histórico de versões
 
+## 4.4.1
+
+- Valores e resumo por aluno novamente disponíveis no dashboard de rematrículas para a validação comercial.
+- Acesso ao acompanhamento permite conferir e ajustar os descontos individuais sem liberar o dashboard financeiro consolidado.
+- Base por curso e condicional único continuam somente para consulta e protegidos contra sobrescrita individual.
+- Dashboard financeiro, consultas agregadas, contas autorizadas e senha exclusiva mantêm o controle de acesso separado, sem aba compartilhada.
+
 ## 4.4.0
 
 - Cadastro central de valor base por curso e desconto condicional único para todos os alunos.

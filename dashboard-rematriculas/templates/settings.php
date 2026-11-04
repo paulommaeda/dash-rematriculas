@@ -15,6 +15,7 @@
         </section>
         <section><h2>Acesso exclusivo ao financeiro</h2>
             <input type="hidden" name="drj_finance_settings" value="1">
+            <p>Essa autorização controla o dashboard financeiro consolidado. Os valores individuais continuam disponíveis no acompanhamento para validação comercial.</p>
             <p>O financeiro fica separado do acompanhamento. Administradores têm acesso. Autorize outras contas abaixo ou configure uma senha exclusiva para a página com <code>[dash_financeiro]</code>.</p>
             <?php $finance_users = get_users(array('orderby' => 'display_name', 'fields' => array('ID', 'display_name', 'user_login'))); $allowed_finance_users = array_map('intval', (array) get_option('drj_finance_allowed_users', array())); ?>
             <label>Contas WordPress autorizadas<select name="drj_finance_users[]" multiple size="7" style="width:100%; max-width:650px;">

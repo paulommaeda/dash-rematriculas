@@ -138,7 +138,7 @@ final class DRJ_Students {
 
     public static function dashboard_data($student) {
         $data = self::view_data($student);
-        if (!DRJ_Finance_Auth::can_access()) unset($data['financeiro'], $data['vencimento'], $data['parcelas']);
+        if (!DRJ_Auth::can_access()) unset($data['financeiro'], $data['vencimento'], $data['parcelas']);
         return $data;
     }
 }

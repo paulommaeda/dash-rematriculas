@@ -1,4 +1,4 @@
-# Dashboard de Rematrículas Journey · 4.4.0
+# Dashboard de Rematrículas Journey · 4.4.1
 
 ## Instalação e atualização
 
@@ -83,7 +83,7 @@ O painel de acompanhamento continua em `[dash_rematriculas]`. O financeiro usa e
 
 Administradores têm acesso financeiro por padrão. Autorize outras contas em **Dash Rematrículas → Configurações → Acesso exclusivo ao financeiro**. A senha exclusiva é opcional e vem desativada; para usá-la, habilite a opção e defina uma senha diferente da senha de acompanhamento. A constante `DRJ_FINANCE_PASSWORD` permite configurar essa senha pelo `wp-config.php`.
 
-A sessão comum não abre o financeiro nem autoriza consultas ou alterações de valores. Usuários sem acesso financeiro não recebem campos de valores no HTML, no JSON do acompanhamento ou nas respostas de edição de aluno. O acompanhamento de matrícula, conferências, anotações e arquivamento continua funcionando. Usuários autorizados mantêm a edição individual de valores no acompanhamento.
+A equipe com acesso ao acompanhamento vê os valores individuais para validação comercial e pode ajustar os descontos individuais, vencimento e parcelas. Base e condicional seguem somente para consulta e usam o cadastro central. Esse acesso não abre o dashboard financeiro nem autoriza suas consultas agregadas. O dashboard financeiro permanece em página e menu separados, sem aba compartilhada. Matrículas, conferências, anotações e arquivamento continuam funcionando.
 
 A sessão financeira por senha dura oito horas, usa cookie e token próprios e pode ser encerrada separadamente. Remover uma conta autorizada bloqueia suas próximas consultas. Trocar a senha ou desativar o acesso por senha revoga as sessões financeiras em andamento. Reativar a opção exige nova autenticação.
 
