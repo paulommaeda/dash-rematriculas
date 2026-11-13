@@ -1,5 +1,13 @@
 # Histórico de versões
 
+## 4.5.0
+
+- API REST autenticada para receber rematrículas por RA, individualmente ou em lotes, com suporte ao contrato de requerimentos do ERP 0.19.23.
+- Confirmação compartilhada com Fluent Forms, preservando a primeira data, valores, conferências, tipo do aluno e arquivamento; RAs ausentes ou duplicados não são associados automaticamente.
+- Configuração administrativa para consultar o ERP com conta de leitura e Senha de aplicativo cifrada, coligada autorizada, caminho do RA e início da campanha.
+- Sincronização manual e automática em páginas, com janela de atualização fixa, retomada, sobreposição e reconciliação diária.
+- Documentação e especificação OpenAPI, sem credenciais reais ou dados pessoais no pacote.
+
 ## 4.4.1
 
 - Valores e resumo por aluno novamente disponíveis no dashboard de rematrículas para a validação comercial.

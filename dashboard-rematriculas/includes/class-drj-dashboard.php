@@ -23,6 +23,9 @@ final class DRJ_Dashboard {
         if (strpos($hook, 'dashboard-rematriculas') !== false || strpos($hook, 'drj-configuracoes') !== false) {
             self::assets();
         }
+        if (strpos($hook, 'drj-configuracoes') !== false && current_user_can('manage_options')) {
+            wp_enqueue_script('drj-erp', DRJ_URL . 'assets/js/erp.js', array(), DRJ_VERSION, true);
+        }
     }
 
     public static function shortcode() {

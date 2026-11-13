@@ -63,11 +63,9 @@ final class DRJ_Integrations {
                 if (!isset($map[$ra])) {
                     continue;
                 }
-                $changed = $wpdb->update($table, array('status_rematricula' => 1, 'data_rematricula' => $submission->created_at), array('id' => $map[$ra], 'arquivado' => 0, 'status_rematricula' => 0));
-                if ($changed === false) {
-                    throw new RuntimeException('A sincronização foi interrompida ao salvar um aluno. Tente novamente.');
-                }
-                $updated += (int) $changed;
+                $result = DRJ_Rematriculas::confirm($ra, $submission->created_at);
+                if (is_wp_error($result)) throw new RuntimeException($result->get_error_message());
+                $updated += (int) $result['alterado'];
                 unset($map[$ra]);
                 break;
             }

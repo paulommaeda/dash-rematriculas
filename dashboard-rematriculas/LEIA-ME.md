@@ -1,4 +1,4 @@
-# Dashboard de Rematrículas Journey · 4.4.1
+# Dashboard de Rematrículas Journey · 4.5.0
 
 ## Instalação e atualização
 
@@ -24,6 +24,8 @@ O arquivamento e a restauração ficam registrados em uma tabela de histórico s
 Campos financeiros e cadastro ficam bloqueados enquanto o aluno estiver arquivado. É necessário restaurá-lo para editar. Antes de arquivar, salve eventuais alterações no cadastro. Uma nova sincronização ou um reenvio da API não desarquiva o aluno.
 
 ## Funcionalidades preservadas
+
+A versão 4.5.0 adiciona a API de rematrículas `POST /wp-json/drj/v1/rematriculas` e a consulta manual/automática ao ERP 0.19.23+. Configure em **Dash Rematrículas → Configurações → API de rematrículas e consulta ao ERP**. Consulte o [guia completo de integração](API-REMATRICULAS.md) e a [especificação OpenAPI](openapi-rematriculas.json). A confirmação usa a mesma regra do Fluent Forms e não cadastra RAs desconhecidos como alunos novos.
 
 - Recepção de novos alunos pela ação AJAX `drj_receber_aluno_novo`, com os campos `secret`, `ra`, `nome` e `turma` em `wp-admin/admin-ajax.php`.
 - Conferências de Comercial, Secretaria, Financeiro e TI e seus webhooks personalizáveis para Teams/Power Automate.
@@ -64,6 +66,9 @@ As páginas que contêm dados do painel emitem instruções para não usar cache
 | `includes/class-drj-students.php` | Alunos, valores, arquivamento e histórico |
 | `includes/class-drj-ajax.php` | Recepção e validação das ações |
 | `includes/class-drj-integrations.php` | Fluent Forms e webhooks |
+| `includes/class-drj-rematriculas.php` | Confirmação por RA compartilhada entre as entradas |
+| `includes/class-drj-rest.php` | API autenticada de recebimento |
+| `includes/class-drj-erp.php` | Consulta paginada, credenciais e agendamento do ERP |
 | `includes/class-drj-dashboard.php` | Consulta e renderização do painel |
 | `includes/class-drj-admin.php` | Menu e configurações |
 | `templates/` | HTML do painel, linhas, login e configurações |

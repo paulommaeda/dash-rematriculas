@@ -2,7 +2,7 @@
 
 Plugin WordPress do Colégio Journey, desenvolvido por Paulo Maeda. Painel de acompanhamento de rematrículas, dados financeiros, conferências por setor, integração com Fluent Forms e arquivamento reversível de desistências.
 
-**Versão: 4.4.1** · [Baixar ZIP para instalar](https://raw.githubusercontent.com/paulommaeda/dash-rematriculas/main/dist/dashboard-rematriculas-4.4.1.zip)
+**Versão: 4.5.0** · [Baixar ZIP para instalar](https://raw.githubusercontent.com/paulommaeda/dash-rematriculas/main/dist/dashboard-rematriculas-4.5.0.zip)
 
 ## Instalação
 
@@ -13,6 +13,14 @@ Plugin WordPress do Colégio Journey, desenvolvido por Paulo Maeda. Painel de ac
 O ZIP contém a pasta `dashboard-rematriculas`, preservando o caminho do plugin 4.0. O ZIP automático de código-fonte gerado pelo GitHub não é o pacote de instalação.
 
 Quem já instalou a versão 4.0 mantém os dados e credenciais. Em uma instalação nova ou atualização direta da versão 3.9, configure a senha do painel e a chave da API em **Dash Rematrículas → Configurações**. A versão pública não contém senhas ou chaves fixas. Também é possível definir `DRJ_DASHBOARD_PASSWORD` e `DRJ_API_SECRET` no `wp-config.php`.
+
+## API de rematrículas e leitura do ERP
+
+Receba rematrículas em `POST /wp-json/drj/v1/rematriculas`, por HTTPS e com o cabeçalho `X-DRJ-Key` contendo a chave configurada no plugin. Exemplo de JSON: `{"ra":"000123","data_rematricula":"2026-11-13T13:00:00Z"}`. A confirmação segue o Fluent Forms: RA já cadastrado, sem criar duplicatas, sem restaurar arquivados e preservando a primeira data, valores e conferências.
+
+Em **Dash Rematrículas → Configurações → API de rematrículas e consulta ao ERP**, também é possível configurar a leitura dos requerimentos do ERP Educacional 0.19.23+, por coligada, usando uma conta de leitura e Senha de aplicativo. Há consulta manual em lotes e automática a cada 15 minutos pelo WP-Cron, com retomada e resumo de pendências. O campo de RA e o início da campanha são configuráveis. A senha fica cifrada e não é devolvida ao formulário.
+
+Consulte [o guia do integrador](dashboard-rematriculas/API-REMATRICULAS.md) e [a especificação OpenAPI](dashboard-rematriculas/openapi-rematriculas.json). Nenhum acesso ao ERP ou ao WordPress da escola é configurado durante a preparação do pacote.
 
 ## Financeiro separado e restrito
 
@@ -91,6 +99,6 @@ Requisitos: WordPress 6.0+, PHP 7.4+, MySQL/MariaDB e `mbstring`. O arquivamento
 | `dist/` | ZIPs instaláveis por versão |
 | `update.json` | Versão estável, URL e checksum do pacote |
 | `scripts/build_release.py` | Geração determinística do ZIP e do manifesto |
-| `tests/` | Testes do atualizador, cálculos, valores centrais e isolamento financeiro |
+| `tests/` | Testes da API, ERP, Fluent Forms, atualizador, cálculos, valores centrais e isolamento financeiro |
 
 O repositório contém apenas código e documentação. Configurações particulares da escola são armazenadas no WordPress e não devem ser incluídas nos commits.

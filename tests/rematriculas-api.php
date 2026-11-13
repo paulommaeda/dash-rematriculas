@@ -1,0 +1,194 @@
+<?php
+/** Execute apenas em WordPress descartável, com banco sintético. Não usa ERP real. */
+if (PHP_SAPI !== 'cli' || getenv('DRJ_TEST_ENV') !== '1' || !getenv('DRJ_WP_BOOTSTRAP')) exit("Defina DRJ_TEST_ENV=1 e DRJ_WP_BOOTSTRAP.\n");
+require getenv('DRJ_WP_BOOTSTRAP');
+$total = 0;
+function drj_api_check($valid, $label) {
+    global $total;
+    if (!$valid) throw new RuntimeException('Falhou: ' . $label);
+    $total++;
+    echo 'OK ' . $label . PHP_EOL;
+}
+function drj_api_request($body, $key = 'somente-teste-api', $method = 'POST', $type = 'application/json') {
+    $request = new WP_REST_Request($method, '/drj/v1/rematriculas');
+    $request->set_header('Content-Type', $type);
+    if ($key !== null) $request->set_header('X-DRJ-Key', $key);
+    $request->set_body(is_string($body) ? $body : wp_json_encode($body));
+    return rest_do_request($request);
+}
+function drj_api_item($id, $ra = null, $changes = array()) {
+    return array_replace_recursive(array('idrequerimento' => (string) $id, 'codcoligada' => '1', 'versao' => '1', 'status' => 'pendente', 'criado_em' => '2026-11-13T13:00:00Z', 'resultado' => null, 'dados' => array('campos' => array('ra_aluno' => $ra))), $changes);
+}
+function drj_api_page($items, $next = null, $company = '1') {
+    return array('schema_version' => '1.0', 'codcoligada' => $company, 'items' => $items, 'next_cursor' => $next, 'limit' => 20);
+}
+$keys = array('drj_api_secret_hash', 'timezone_string', DRJ_ERP::OPTION, DRJ_ERP::RUN, DRJ_ERP::REPORT, 'drj_erp_checkpoint', 'drj_erp_full_sync', 'drj_ff_form_id', 'drj_ff_ra_field');
+$backup = array();
+foreach ($keys as $key) $backup[$key] = get_option($key, null);
+$original_server = $_SERVER;
+$original_user = get_current_user_id();
+$table = DRJ_Database::table();
+$prefix = '000DRJ-' . wp_generate_password(10, false, false) . '-';
+$ids = array();
+$forms = $wpdb->prefix . 'fluentform_submissions';
+$created_forms = false;
+$responses = array(); $requests = array();
+$mock = function ($pre, $args, $url) use (&$responses, &$requests) {
+    if (strpos($url, 'https://erp.example.test/') !== 0) return $pre;
+    $requests[] = array('url' => $url, 'args' => $args);
+    if (!$responses) return new WP_Error('test_unexpected', 'Consulta inesperada no teste');
+    $response = array_shift($responses);
+    if (is_wp_error($response)) return $response;
+    return array('response' => array('code' => $response['http'] ?? 200), 'headers' => array(), 'body' => wp_json_encode($response['body']));
+};
+add_filter('pre_http_request', $mock, 10, 3);
+try {
+    update_option('drj_api_secret_hash', wp_hash_password('somente-teste-api'), false);
+    update_option('timezone_string', 'America/Sao_Paulo', false);
+    delete_option(DRJ_ERP::OPTION);
+    foreach (array('P', 'A', 'R', 'D', 'D', 'FF', 'ERP', 'PRIORIDADE', 'CASO') as $suffix) {
+        $data = array('ra' => $prefix . $suffix, 'nome_aluno' => 'Aluno sintético', 'turma' => '6º ANO', 'tipo_aluno' => 'antigo', 'status_rematricula' => 0, 'valor_2027' => '987.65', 'desc_condicional' => '12.34', 'desc_incondicional' => '111.11', 'desc_indicacao' => '22.22', 'desc_irmaos' => '33.33', 'vencimento' => '09', 'parcelas' => 10, 'check_comercial' => 1, 'check_secretaria' => 1, 'check_financeiro' => 1, 'check_ti' => 1, 'observacao' => 'Preservar esta anotação');
+        if ($suffix === 'A') $data['arquivado'] = 1;
+        drj_api_check((bool) $wpdb->insert($table, $data), 'fixture ' . $suffix . ' criada');
+        $ids[] = $wpdb->insert_id;
+    }
+    wp_set_current_user(0);
+    drj_api_check(drj_api_request(array('ra' => $prefix . 'P'), null)->get_status() === 401, 'sem chave não confirma');
+    drj_api_check(drj_api_request(array('ra' => $prefix . 'P'), 'incorreta')->get_status() === 401, 'chave incorreta recusada');
+    $request = new WP_REST_Request('POST', '/drj/v1/rematriculas');
+    $request->set_query_params(array('secret' => 'somente-teste-api', 'X-DRJ-Key' => 'somente-teste-api'));
+    $request->set_header('Content-Type', 'application/json'); $request->set_body(wp_json_encode(array('ra' => $prefix . 'P', 'secret' => 'somente-teste-api')));
+    drj_api_check(rest_do_request($request)->get_status() === 401, 'URL e corpo não substituem cabeçalho de autenticação');
+    $_SERVER['HTTPS'] = 'off'; $_SERVER['SERVER_PORT'] = 80;
+    drj_api_check(drj_api_request(array('ra' => $prefix . 'P'))->get_status() === 403, 'HTTP sem TLS recusado');
+    $_SERVER['HTTPS'] = 'on'; $_SERVER['SERVER_PORT'] = 443;
+    drj_api_check(drj_api_request(array(), 'somente-teste-api', 'GET')->get_status() === 404, 'endpoint não permite leitura GET');
+    drj_api_check(drj_api_request('{invalido')->get_status() === 400, 'JSON inválido recusado');
+    drj_api_check(drj_api_request('ra=123', 'somente-teste-api', 'POST', 'application/x-www-form-urlencoded')->get_status() === 415, 'formato diferente de JSON recusado');
+    drj_api_check(drj_api_request(array('ra' => 123))->get_status() === 422, 'RA numérico recusado para preservar zeros');
+    drj_api_check(drj_api_request(array('ra' => array('123')))->get_status() === 422, 'RA estruturado recusado');
+    drj_api_check(drj_api_request(array('ra' => $prefix . 'P', 'data_rematricula' => '2026-02-30T13:00:00Z'))->get_status() === 422, 'data inexistente recusada');
+    drj_api_check(drj_api_request(array('ra' => $prefix . 'P', 'data_rematricula' => '2026-11-13 13:00:00'))->get_status() === 422, 'data sem fuso recusada');
+    drj_api_check(drj_api_request(array('ra' => $prefix . 'P', 'data_rematricula' => '2026-11-13T13:00:00+99:00'))->get_status() === 422, 'fuso inválido recusado');
+    drj_api_check(drj_api_request(array('ra' => $prefix . 'P', 'extra' => str_repeat('x', DRJ_REST::MAX_BODY)))->get_status() === 413, 'limite de corpo respeitado');
+    drj_api_check(drj_api_request(array('ra' => $prefix . 'DESCONHECIDO'))->get_status() === 404, 'RA ausente não cria aluno novo');
+    drj_api_check(drj_api_request(array('ra' => $prefix . 'D'))->get_status() === 409, 'RA duplicado bloqueia associação ambígua');
+    drj_api_check(drj_api_request(array('ra' => strtolower($prefix . 'CASO')))->get_status() === 404, 'associação mantém comparação exata do Fluent Forms');
+    $before = (array) DRJ_Students::find($ids[0]);
+    $result = drj_api_request(array('ra' => $prefix . 'P', 'data_rematricula' => '2026-11-13T13:00:00Z', 'turma' => 'Outra turma', 'valor_2027' => 1, 'desc_incondicional' => 9999, 'check_comercial' => 0, 'tipo_aluno' => 'novo'));
+    $data = $result->get_data();
+    drj_api_check($result->get_status() === 200 && $data['situacao'] === 'confirmado' && $data['alterado'] && $data['ra'] === $prefix . 'P', 'POST confirma aluno existente preservando zeros do RA');
+    drj_api_check($data['data_rematricula'] === '2026-11-13 10:00:00', 'data UTC convertida para fuso do WordPress');
+    $after = (array) DRJ_Students::find($ids[0]);
+    unset($before['status_rematricula'], $before['data_rematricula'], $after['status_rematricula'], $after['data_rematricula']);
+    drj_api_check($before === $after, 'só status e data mudam; financeiro, conferências e cadastro preservados');
+    $repeat = drj_api_request(array('ra' => $prefix . 'P', 'data_rematricula' => '2026-12-01T13:00:00Z'))->get_data();
+    drj_api_check($repeat['situacao'] === 'ja_confirmado' && !$repeat['alterado'] && $repeat['data_rematricula'] === '2026-11-13 10:00:00', 'reenvio preserva primeira confirmação');
+    $archived_before = (array) DRJ_Students::find($ids[1]);
+    drj_api_check(drj_api_request(array('ra' => $prefix . 'A'))->get_data()['situacao'] === 'arquivado' && (array) DRJ_Students::find($ids[1]) === $archived_before, 'arquivado continua oculto e não sofre alteração');
+    drj_api_check(drj_api_request(array('ra' => $prefix . 'R', 'status' => 'rejeitado'))->get_data()['situacao'] === 'rejeitado' && !(int) DRJ_Students::find($ids[2])->status_rematricula, 'rejeitado simples não confirma');
+    drj_api_check(drj_api_request(array('ra' => $prefix . 'R', 'status' => 'outro'))->get_status() === 422, 'status desconhecido recusado');
+    $batch = drj_api_request(array('items' => array(array('ra' => $prefix . 'P'), array('ra' => $prefix . 'DESCONHECIDO'), 'inválido')));
+    drj_api_check($batch->get_status() === 207 && $batch->get_data()['erros'] === 2 && $batch->get_data()['resultados'][0]['sucesso'], 'lote parcial informa erro por índice sem perder sucessos');
+    drj_api_check(drj_api_request(array('items' => array_fill(0, 51, array('ra' => $prefix . 'P'))))->get_status() === 422, 'lote maior que 50 recusado');
+    drj_api_check(drj_api_request(array('items' => array()))->get_status() === 422, 'lote vazio recusado');
+    drj_api_check(!DRJ_Finance_Auth::can_access() && !isset($data['financeiro']) && !isset($data['nome_aluno']), 'chave de recebimento não abre financeiro nem retorna cadastro completo');
+    update_option('drj_api_secret_hash', wp_hash_password('outra-chave-teste'), false);
+    drj_api_check(drj_api_request(array('ra' => $prefix . 'P'))->get_status() === 401, 'troca de chave revoga a anterior imediatamente');
+    update_option('drj_api_secret_hash', wp_hash_password('somente-teste-api'), false);
+    $item = drj_api_item('1', $prefix . 'ERP');
+    drj_api_check(drj_api_request(array('item' => $item))->get_status() === 409, 'objeto ERP exige coligada configurada');
+    $config = array('url' => 'https://erp.example.test/wp-json/erp-educacional/v1/integracao/requerimentos', 'username' => 'leitor-teste', 'password' => 'senha-aplicativo-sintetica', 'company' => '1', 'ra_path' => 'dados.campos.ra_aluno', 'created_since' => '2026-11-01');
+    drj_api_check(is_wp_error(DRJ_ERP::save($config)), 'visitante não configura ERP');
+    wp_set_current_user(1);
+    drj_api_check(!is_wp_error(DRJ_ERP::save($config)), 'administrador configura conta de leitura e coligada');
+    drj_api_check(strpos(wp_json_encode(get_option(DRJ_ERP::OPTION)), 'senha-aplicativo-sintetica') === false, 'senha de aplicativo cifrada no banco');
+    $bad = $config; $bad['url'] = 'http://erp.example.test/wp-json/erp-educacional/v1/integracao/requerimentos';
+    drj_api_check(is_wp_error(DRJ_ERP::save($bad)), 'URL sem HTTPS não é cadastrada');
+    $bad = $config; $bad['url'] .= '?secret=nao-pode';
+    drj_api_check(is_wp_error(DRJ_ERP::save($bad)), 'credenciais em query não são cadastradas');
+    $bad = $config; $bad['url'] = 'https://erp.example.test/wp-json/erp-educacional/v1/integracao/alunos';
+    drj_api_check(is_wp_error(DRJ_ERP::save($bad)), 'somente rota de consulta de requerimentos aceita');
+    $bad = $config; $bad['created_since'] = '2026-02-30';
+    drj_api_check(is_wp_error(DRJ_ERP::save($bad)), 'data inicial inválida recusada');
+    $bad = $config; $bad['ra_path'] = array('ra');
+    drj_api_check(is_wp_error(DRJ_ERP::save($bad)), 'caminho de RA estruturado recusado');
+    wp_set_current_user(0);
+    $foreign = $item; $foreign['codcoligada'] = '2';
+    drj_api_check(drj_api_request(array('item' => $foreign))->get_status() === 422 && !(int) DRJ_Students::find($ids[6])->status_rematricula, 'objeto de outra coligada não altera aluno');
+    $erp_result = drj_api_request(array('schema_version' => '1.0', 'item' => $item))->get_data();
+    drj_api_check($erp_result['situacao'] === 'confirmado', 'contrato de detalhe do ERP aceito com RA de campo configurado');
+    $priority = drj_api_item('2', $prefix . 'R', array('status' => 'aprovado', 'resultado' => array('ra' => $prefix . 'PRIORIDADE')));
+    drj_api_check(drj_api_request($priority)->get_data()['situacao'] === 'confirmado' && !(int) DRJ_Students::find($ids[2])->status_rematricula, 'RA oficial após aprovação tem prioridade sobre resposta do formulário');
+    drj_api_check(DRJ_Rematriculas::erp_item(drj_api_item('3'), '1', 'dados.campos.ra_aluno')['situacao'] === 'sem_ra', 'requerimento sem RA não é associado por nome ou documentos');
+    drj_api_check(DRJ_Rematriculas::erp_item(drj_api_item('4', $prefix . 'R', array('status' => 'rejeitado')), '1', 'dados.campos.ra_aluno')['situacao'] === 'rejeitado', 'rejeitado do ERP ignorado');
+    drj_api_check(DRJ_Rematriculas::erp_item(drj_api_item('5', $prefix . 'R', array('criado_em' => '2026-10-31T10:00:00Z')), '1', 'dados.campos.ra_aluno', '2026-11-01')['situacao'] === 'anterior_ao_periodo', 'período protege contra requerimento antigo');
+    wp_set_current_user(1);
+    ob_start(); DRJ_Admin::settings(); $html = ob_get_clean();
+    drj_api_check(strpos($html, 'senha-aplicativo-sintetica') === false && strpos($html, 'name="drj_erp[password]" value=""') !== false, 'configurações não devolvem senha de aplicativo ao HTML');
+    $responses[] = array('body' => drj_api_page(array(drj_api_item('10', $prefix . 'R'), drj_api_item('11', $prefix . 'A'), drj_api_item('12')), '12'));
+    $responses[] = array('body' => drj_api_page(array(drj_api_item('13', $prefix . 'DESCONHECIDO'), drj_api_item('14', $prefix . 'R', array('status' => 'rejeitado')), drj_api_item('15', $prefix . 'D'), drj_api_item('16', $prefix . 'R', array('criado_em' => '2026-10-01T13:00:00Z')))));
+    $first = DRJ_ERP::sync_page(true);
+    drj_api_check(!is_wp_error($first) && !$first['done'] && $first['totals']['confirmado'] === 1 && !get_option('drj_erp_checkpoint'), 'primeira página não antecipa marco de atualização');
+    $saved_run = get_option(DRJ_ERP::RUN);
+    $second = DRJ_ERP::sync_page();
+    drj_api_check(!is_wp_error($second) && $second['done'] && $second['totals']['lidos'] === 7 && $second['totals']['nao_encontrado'] === 1 && $second['totals']['sem_ra'] === 1 && $second['totals']['arquivado'] === 1 && $second['totals']['rejeitado'] === 1 && $second['totals']['ra_duplicado'] === 1 && $second['totals']['anterior_ao_periodo'] === 1, 'paginação concilia confirmações e todos os motivos de não importar');
+    parse_str(wp_parse_url($requests[0]['url'], PHP_URL_QUERY), $q1);
+    parse_str(wp_parse_url($requests[1]['url'], PHP_URL_QUERY), $q2);
+    drj_api_check($q1['cursor'] === '0' && $q2['cursor'] === '12' && $q1['atualizado_ate'] === $q2['atualizado_ate'] && $q2['codcoligada'] === '1', 'páginas usam cursor crescente, mesma janela e mesma coligada');
+    drj_api_check($requests[0]['args']['headers']['Authorization'] === 'Basic ' . base64_encode('leitor-teste:senha-aplicativo-sintetica') && $requests[0]['args']['redirection'] === 0 && $requests[0]['args']['sslverify'] && $requests[0]['args']['reject_unsafe_urls'], 'consulta usa Senha de aplicativo, HTTPS validado e bloqueia redirecionamento de credenciais');
+    drj_api_check((int) get_option('drj_erp_checkpoint') === strtotime($saved_run['until']) && !get_option(DRJ_ERP::RUN), 'marco avança somente após última página');
+    $checkpoint = get_option('drj_erp_checkpoint');
+    $responses[] = array('body' => drj_api_page(array()));
+    DRJ_ERP::sync_page();
+    parse_str(wp_parse_url(end($requests)['url'], PHP_URL_QUERY), $incremental);
+    drj_api_check($incremental['cursor'] === '0' && strtotime($incremental['atualizado_desde']) === (int) $checkpoint - 120, 'rodada incremental reinicia cursor e sobrepõe janela para alterações de IDs antigos');
+    $checkpoint = get_option('drj_erp_checkpoint');
+    $responses[] = new WP_Error('offline', 'não divulgar senha nem resposta');
+    drj_api_check(is_wp_error(DRJ_ERP::sync_page()) && get_option('drj_erp_checkpoint') === $checkpoint, 'falha de rede preserva marco para repetir rodada');
+    $responses[] = array('http' => 401, 'body' => array('token_privado' => 'nao-divulgar'));
+    drj_api_check(is_wp_error(DRJ_ERP::sync_page()) && strpos(wp_json_encode(get_option(DRJ_ERP::REPORT)), 'nao-divulgar') === false, 'erro HTTP não armazena corpo sensível');
+    $responses[] = array('body' => drj_api_page(array(), null, '2'));
+    drj_api_check(is_wp_error(DRJ_ERP::sync_page()) && get_option('drj_erp_checkpoint') === $checkpoint, 'coleção de outra coligada recusada antes de processar');
+    $responses[] = array('body' => drj_api_page(array(drj_api_item('17', $prefix . 'R')), '0'));
+    drj_api_check(is_wp_error(DRJ_ERP::sync_page()) && !get_option(DRJ_ERP::RUN), 'cursor repetido ou regressivo não causa laço');
+    $responses[] = array('body' => drj_api_page(array(drj_api_item('18', $prefix . 'R')), '18'));
+    $responses[] = new WP_Error('offline', 'interromper segunda página');
+    $responses[] = array('body' => drj_api_page(array(drj_api_item('19', $prefix . 'R'))));
+    DRJ_ERP::sync_page(true);
+    $run = get_option(DRJ_ERP::RUN);
+    drj_api_check(is_wp_error(DRJ_ERP::sync_page()) && get_option(DRJ_ERP::RUN) === $run, 'erro no meio da rodada preserva cursor e janela');
+    drj_api_check(!is_wp_error(DRJ_ERP::sync_page()) && !get_option(DRJ_ERP::RUN), 'nova tentativa retoma a página interrompida');
+    $responses[] = array('body' => drj_api_page(array()));
+    update_option('drj_erp_full_sync', time() - DAY_IN_SECONDS - 1, false);
+    DRJ_ERP::sync_page();
+    parse_str(wp_parse_url(end($requests)['url'], PHP_URL_QUERY), $daily);
+    drj_api_check(!isset($daily['atualizado_desde']), 'reconciliação diária revisita requerimentos sem correspondência');
+    $enabled = $config; $enabled['enabled'] = '1';
+    drj_api_check(!is_wp_error(DRJ_ERP::save($enabled)) && wp_next_scheduled(DRJ_ERP::CRON), 'consulta automática cria agendamento');
+    $cron_before = _get_cron_array(); DRJ_ERP::schedule();
+    drj_api_check(_get_cron_array() === $cron_before, 'agendamento não se duplica por visita');
+    drj_api_check(!is_wp_error(DRJ_ERP::save($config)) && !wp_next_scheduled(DRJ_ERP::CRON) && !wp_next_scheduled(DRJ_ERP::CONTINUE_CRON), 'desativar automático remove agendamentos');
+    $new_target = $config; $new_target['url'] = 'https://outro.example.test/wp-json/erp-educacional/v1/integracao/requerimentos'; $new_target['password'] = '';
+    drj_api_check(!is_wp_error(DRJ_ERP::save($new_target)) && DRJ_ERP::settings()['password'] === '', 'trocar destino não transfere a credencial antiga');
+    if (!$wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like($forms)))) {
+        $wpdb->query("CREATE TABLE `$forms` (id bigint unsigned AUTO_INCREMENT PRIMARY KEY, form_id int NOT NULL, response longtext, created_at datetime)");
+        $created_forms = true;
+        update_option('drj_ff_form_id', 34, false); update_option('drj_ff_ra_field', 'ra_aluno', false);
+        $wpdb->insert($forms, array('form_id' => 34, 'response' => wp_json_encode(array('ra_aluno' => $prefix . 'FF')), 'created_at' => '2026-11-12 09:00:00'));
+        $wpdb->insert($forms, array('form_id' => 34, 'response' => wp_json_encode(array('ra_aluno' => $prefix . 'A')), 'created_at' => '2026-11-12 09:00:00'));
+        $ff = DRJ_Integrations::sync(0, 0);
+        drj_api_check($ff['updated'] === 1 && $ff['done'] && DRJ_Students::find($ids[5])->data_rematricula === '2026-11-12 09:00:00', 'Fluent Forms confirma pelo mesmo serviço preservando sua data local');
+        drj_api_check(DRJ_Integrations::sync(0, 0)['updated'] === 0 && (int) DRJ_Students::find($ids[1])->arquivado === 1, 'Fluent Forms também preserva reenvios e arquivados');
+    }
+    echo 'TOTAL: ' . $total . ' verificações da API e integração aprovadas.' . PHP_EOL;
+} finally {
+    remove_filter('pre_http_request', $mock, 10);
+    DRJ_ERP::unschedule();
+    foreach ($backup as $key => $value) { if ($value === null) delete_option($key); else update_option($key, $value, false); }
+    DRJ_ERP::schedule();
+    $wpdb->query($wpdb->prepare("DELETE FROM `$table` WHERE ra LIKE %s", $wpdb->esc_like($prefix) . '%'));
+    if ($created_forms) $wpdb->query("DROP TABLE `$forms`");
+    $_SERVER = $original_server;
+    wp_set_current_user($original_user);
+}
