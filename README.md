@@ -2,7 +2,7 @@
 
 Plugin WordPress do Colégio Journey, desenvolvido por Paulo Maeda. Painel de acompanhamento de rematrículas, dados financeiros, conferências por setor, integração com Fluent Forms e arquivamento reversível de desistências.
 
-**Versão: 4.5.0** · [Baixar ZIP para instalar](https://raw.githubusercontent.com/paulommaeda/dash-rematriculas/main/dist/dashboard-rematriculas-4.5.0.zip)
+**Versão: 4.6.0** · [Baixar ZIP para instalar](https://raw.githubusercontent.com/paulommaeda/dash-rematriculas/main/dist/dashboard-rematriculas-4.6.0.zip)
 
 ## Instalação
 
@@ -15,6 +15,12 @@ O ZIP contém a pasta `dashboard-rematriculas`, preservando o caminho do plugin 
 Quem já instalou a versão 4.0 mantém os dados e credenciais. Em uma instalação nova ou atualização direta da versão 3.9, configure a senha do painel e a chave da API em **Dash Rematrículas → Configurações**. A versão pública não contém senhas ou chaves fixas. Também é possível definir `DRJ_DASHBOARD_PASSWORD` e `DRJ_API_SECRET` no `wp-config.php`.
 
 ## API de rematrículas e leitura do ERP
+
+Em **Dash Rematrículas → Logs de integração**, consulte cada requerimento com origem, ID/protocolo, RA, versão, primeira/última leitura, quantidade de tentativas, resultado e motivo. Use filtros por origem, resultado, RA/ID/protocolo e datas. **Ver histórico** mostra as últimas 50 leituras do registro; a lista tem 50 registros por página. O log começa após instalar a 4.6.0.
+
+O mesmo requerimento aparece uma única vez. O ERP usa coligada + ID, inclusive quando o mesmo item chega por consulta e por REST; versões antigas são ignoradas. Na API simples, envie `id_requerimento` e opcionalmente `sistema_origem`, ou use `Idempotency-Key` em um envio individual. Sem ID, mantém o controle pelo RA. Reenvios preservam a primeira confirmação; o mesmo ID não pode confirmar outro RA. As respostas incluem `log_id` para localizar o registro.
+
+O histórico detalhado fica disponível por 90 dias. A identidade e o bloqueio de duplicidade permanecem após a limpeza dos eventos. Somente administradores acessam os logs, e senhas, chaves, dados médicos e corpos completos não são armazenados.
 
 Receba rematrículas em `POST /wp-json/drj/v1/rematriculas`, por HTTPS e com o cabeçalho `X-DRJ-Key` contendo a chave configurada no plugin. Exemplo de JSON: `{"ra":"000123","data_rematricula":"2026-11-13T13:00:00Z"}`. A confirmação segue o Fluent Forms: RA já cadastrado, sem criar duplicatas, sem restaurar arquivados e preservando a primeira data, valores e conferências.
 
@@ -99,6 +105,6 @@ Requisitos: WordPress 6.0+, PHP 7.4+, MySQL/MariaDB e `mbstring`. O arquivamento
 | `dist/` | ZIPs instaláveis por versão |
 | `update.json` | Versão estável, URL e checksum do pacote |
 | `scripts/build_release.py` | Geração determinística do ZIP e do manifesto |
-| `tests/` | Testes da API, ERP, Fluent Forms, atualizador, cálculos, valores centrais e isolamento financeiro |
+| `tests/` | Testes de logs, duplicidade e concorrência, API, ERP, Fluent Forms, atualizador, cálculos e acesso financeiro |
 
 O repositório contém apenas código e documentação. Configurações particulares da escola são armazenadas no WordPress e não devem ser incluídas nos commits.

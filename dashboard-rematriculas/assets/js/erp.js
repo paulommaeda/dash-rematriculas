@@ -7,7 +7,7 @@
     let running = false;
     const summarize = report => {
         const t = report.totals;
-        return `Lidos: ${t.lidos} · Confirmados: ${t.confirmado} · Já confirmados: ${t.ja_confirmado} · Arquivados: ${t.arquivado} · RA não cadastrado: ${t.nao_encontrado} · Sem RA: ${t.sem_ra} · RA duplicado: ${t.ra_duplicado} · Rejeitados: ${t.rejeitado} · Anteriores ao período: ${t.anterior_ao_periodo}.`;
+        return `Lidos: ${t.lidos} · Confirmados: ${t.confirmado} · Já confirmados/reenvios: ${t.ja_confirmado} · Arquivados: ${t.arquivado} · RA não cadastrado: ${t.nao_encontrado} · Sem RA: ${t.sem_ra} · RA duplicado: ${t.ra_duplicado} · Rejeitados: ${t.rejeitado} · Anteriores ao período: ${t.anterior_ao_periodo} · Versões antigas: ${t.versao_antiga || 0} · Associação a outro RA bloqueada: ${t.conflito_requerimento || 0} · Inválidos: ${t.invalidos || 0}.`;
     };
     async function sync(full) {
         if (running) return;

@@ -1,4 +1,4 @@
-# Integração de rematrículas · 4.5.0
+# Integração de rematrículas · 4.6.0
 
 O dashboard pode receber envios de qualquer sistema por POST ou consultar a API de requerimentos do ERP Educacional 0.19.23+. As duas entradas usam a mesma confirmação por RA do Fluent Forms.
 
@@ -30,6 +30,23 @@ A chave é exigida no cabeçalho, mesmo se houver uma sessão WordPress aberta. 
 | `ra` | Obrigatório, texto com até 100 bytes. Preserve zeros iniciais. Associação exata, inclusive maiúsculas/minúsculas. |
 | `data_rematricula` | Opcional. ISO 8601 com fuso, como `2026-11-13T10:00:00-03:00` ou UTC com `Z`. Ausente/vazio: horário de recebimento. |
 | `status` | Opcional: `pendente`, `aprovado` ou `rejeitado`. Ausente, pendente e aprovado confirmam o recebimento; rejeitado é ignorado. |
+| `id_requerimento` | Recomendado. Identificador estável de até 100 letras, números, pontos, traços, dois-pontos ou sublinhados. Repita o mesmo ID em todo reenvio. |
+| `sistema_origem` | Opcional, padrão `externo`. Até 64 caracteres nas mesmas regras do ID; distingue identificadores de sistemas externos diferentes. |
+
+Em envios individuais, o cabeçalho `Idempotency-Key` pode substituir `id_requerimento`. Se ambos forem enviados, precisam ser iguais. Em lotes, informe o ID em cada item; um cabeçalho único para vários requerimentos é recusado. Os objetos do ERP usam seus próprios `codcoligada` + `idrequerimento`, compartilhando a identidade entre POST e consulta automática.
+
+Exemplo recomendado para o envio simples:
+
+```json
+{
+  "id_requerimento": "REM-2027-000123",
+  "sistema_origem": "portal",
+  "ra": "000123",
+  "data_rematricula": "2026-11-13T13:00:00Z"
+}
+```
+
+Sem identificador externo, a compatibilidade continua usando sistema de origem + RA. Para um requerimento novo em outra campanha, envie um ID novo, pois o registro de um requerimento aceito permanece protegido contra reaplicação. O mesmo ID não pode confirmar outro RA; essa tentativa recebe HTTP 409 e fica explicada no histórico.
 
 Exemplo para o integrador, substituindo os valores ilustrativos:
 
@@ -54,6 +71,8 @@ Resposta HTTP 200, considerando WordPress no fuso de São Paulo:
 
 `data_rematricula` na resposta e no banco usa o fuso configurado no WordPress. Não é um horário UTC sem identificação.
 
+A partir da 4.6.0, resultados incluem `log_id`, referência ao registro administrativo. Reenvios já aceitos também retornam `duplicado: true`. Erros de itens incluem a referência em `data.log_id` (ou `resultados[].log_id` em lotes), quando o log pôde ser gravado.
+
 | `situacao` | Efeito |
 | --- | --- |
 | `confirmado` | Aluno existente e ativo passa a `status_rematricula=1`, com a data do requerimento. |
@@ -62,6 +81,7 @@ Resposta HTTP 200, considerando WordPress no fuso de São Paulo:
 | `rejeitado` | Nenhuma alteração. Não desfaz confirmações anteriores. |
 | `sem_ra` | Objeto do ERP sem RA disponível; não foi associado a um aluno. |
 | `anterior_ao_periodo` | Objeto do ERP anterior à campanha configurada; não importado. |
+| `versao_antiga` | Já foi lida uma versão maior do mesmo requerimento do ERP. Nenhuma alteração. |
 
 **Mesma regra do Fluent Forms:** a integração confirma alunos que já estão no acompanhamento. Não cria cadastros para RAs desconhecidos, não altera o tipo do aluno e não procura correspondências por nome ou CPF. Não altera nome, turma, preços, descontos, parcelas, conferências ou anotações. Não restaura desistências. O financeiro consolidado mantém a autorização exclusiva.
 
@@ -89,7 +109,7 @@ A rota também aceita diretamente o item do ERP, o envelope de detalhe `{"schema
 - O RA de `resultado.ra` tem prioridade após a aprovação. Se não existir, o dashboard lê o caminho configurado, por exemplo `dados.campos.ra_aluno`.
 - A data vem de `criado_em`. O início da campanha, se configurado, é aplicado no fuso do WordPress.
 - Pendentes e aprovados com RA confirmam o **recebimento do requerimento**, como o envio do Fluent Forms. Isso não significa aprovação no ERP nem conferência dos setores.
-- Rejeitados são ignorados. Alterações de versão não sobrescrevem a primeira confirmação. O dashboard não mantém um espelho dos requerimentos nem dos seus dados pessoais.
+- Rejeitados não confirmam e aparecem como rejeitados no log. Alterações de versão não sobrescrevem a primeira confirmação. Versões antigas não são reaplicadas; uma aprovação antiga não supera uma rejeição mais recente já lida. O dashboard não mantém um espelho dos dados pessoais dos requerimentos.
 
 Não é necessário transmitir documentos, dados médicos ou anexos. Se o sistema enviar campos adicionais, eles não são armazenados. A resposta não contém o cadastro completo nem dados financeiros.
 
@@ -101,15 +121,31 @@ Não é necessário transmitir documentos, dados médicos ou anexos. Se o sistem
 | 401 | Chave ausente, incorreta ou revogada |
 | 403 | Conexão sem HTTPS |
 | 404 | RA não cadastrado; método/rota inexistente |
-| 409 | RA duplicado, cadastro alterado durante a confirmação ou coligada do ERP não configurada |
+| 409 | RA duplicado, mesmo requerimento associado a outro RA, cadastro alterado durante a confirmação ou coligada do ERP não configurada |
 | 413 | Corpo maior que 1 MiB |
 | 415 | Content-Type diferente de JSON |
 | 422 | RA, data, status, coligada, contrato ou lote inválidos |
-| 503 | Banco pendente de atualização ou falha ao consultar/gravar; tente novamente |
+| 503 | Banco pendente, falha ao consultar/gravar o registro ou log, ou requerimento em processamento; tente novamente |
 
 Erros individuais usam o formato REST do WordPress: `code`, `message`, `data.status`. As respostas da rota recebem `Cache-Control: private, no-store, max-age=0`. Não há rota GET para ler alunos ou finanças com essa chave.
 
 Especificação para importar em ferramentas de integração: [openapi-rematriculas.json](openapi-rematriculas.json).
+
+## Logs e controle de duplicidade
+
+Abra **Dash Rematrículas → Logs de integração**, ou o botão **Ver logs de integração** nas configurações. Somente administradores acessam essa página.
+
+- A lista tem uma linha por requerimento, com origem, ID/protocolo, RA recebido/vinculado, versão mais recente, primeira/última leitura, número de tentativas, resultado e motivo.
+- Os resultados são **Lido / em processamento**, **Aceito**, **Reenvio evitado**, **Ignorado**, **Rejeitado** e **Erro**. Uma leitura é gravada antes da confirmação; se houver interrupção, ela pode permanecer em processamento para investigação e retomada.
+- **Ver histórico** mostra até 50 leituras recentes do mesmo registro, com canal (consulta, API ou Fluent Forms), versão recebida, decisão e motivo. Releituras não criam outro requerimento na lista.
+- Filtros por origem, último resultado, RA/ID/protocolo e intervalo da última leitura respeitam o fuso do WordPress. A lista tem 50 registros por página.
+- O resumo diferencia registros únicos, tentativas, requerimentos que já foram aceitos, reenvios evitados e rejeições/erros atuais. Um aceite anterior continua contado se uma tentativa posterior for recusada.
+- A identidade do ERP é coligada + ID; na API simples, sistema + ID, com fallback por RA; no Fluent Forms, o ID do envio. O banco tem índice único e cada identidade é serializada durante o processamento.
+- A reserva do RA é persistida antes de confirmar. Uma queda após a confirmação pode ser retomada pelo mesmo RA, sem permitir reaproveitar aquele requerimento para outro aluno.
+- Pendências definitivas, como RA inicialmente inexistente, ficam registradas e podem ser corrigidas e reenviadas. Alunos arquivados, valores, conferências e a primeira data continuam preservados.
+- Falhas de conexão, contrato e configuração aparecem como ocorrências gerais agrupadas por código e hora. Recusas de autenticação/HTTPS são limitadas a um registro por minuto para não saturar o histórico; não guardam o corpo nem a chave recebida.
+
+O log começa após instalar a versão 4.6.0; não reconstrói tentativas antigas da 4.5.0. Execute uma sincronização para acompanhar novas leituras. Eventos detalhados têm retenção de 90 dias, com limpeza diária limitada por lote. A identidade, os contadores e o bloqueio de duplicidade permanecem após a limpeza. Não há gravação de senhas, chaves, documentos, dados médicos, anexos ou corpos completos dos formulários.
 
 ## 2. Buscar automaticamente no ERP
 

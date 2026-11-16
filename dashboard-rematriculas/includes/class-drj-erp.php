@@ -156,7 +156,7 @@ final class DRJ_ERP {
     }
 
     private static function counts() {
-        return array_fill_keys(array('lidos', 'confirmado', 'ja_confirmado', 'arquivado', 'nao_encontrado', 'sem_ra', 'rejeitado', 'anterior_ao_periodo', 'ra_duplicado'), 0);
+        return array_fill_keys(array('lidos', 'confirmado', 'ja_confirmado', 'arquivado', 'nao_encontrado', 'sem_ra', 'rejeitado', 'anterior_ao_periodo', 'ra_duplicado', 'versao_antiga', 'conflito_requerimento', 'invalidos'), 0);
     }
 
     private static function greater($a, $b) {
@@ -169,13 +169,14 @@ final class DRJ_ERP {
         try {
             $settings = self::settings();
             $password = self::decrypt($settings['password']);
-            if (!$settings['url'] || !$settings['company'] || !$settings['username'] || !$password) return new WP_Error('drj_erp_nao_configurado', 'Configure a URL, coligada, usuário e senha de aplicativo do ERP. Se as chaves do WordPress mudaram, cadastre a senha novamente.');
+            if (!$settings['url'] || !$settings['company'] || !$settings['username'] || !$password) return self::failure('Configure a URL, coligada, usuário e senha de aplicativo do ERP. Se as chaves do WordPress mudaram, cadastre a senha novamente.', 'drj_erp_nao_configurado');
             $run = get_option(self::RUN, false);
             if ($full || !is_array($run)) {
                 $checkpoint = (int) get_option('drj_erp_checkpoint', 0);
                 $full = $full || !$checkpoint || (int) get_option('drj_erp_full_sync', 0) < time() - DAY_IN_SECONDS;
                 $run = array('cursor' => '0', 'until' => gmdate('Y-m-d\TH:i:s\Z'), 'since' => $full ? '' : gmdate('Y-m-d\TH:i:s\Z', max(0, $checkpoint - 120)), 'full' => $full, 'totals' => self::counts(), 'warnings' => array());
             }
+            $run['totals'] = array_merge(self::counts(), $run['totals']);
             $args = array('cursor' => $run['cursor'], 'limit' => self::PAGE_SIZE, 'status' => 'todos', 'codcoligada' => $settings['company'], 'atualizado_ate' => $run['until']);
             if ($run['since'] !== '') $args['atualizado_desde'] = $run['since'];
             $response = wp_safe_remote_get(add_query_arg($args, $settings['url']), array(
@@ -193,13 +194,14 @@ final class DRJ_ERP {
                 $run['totals']['lidos']++;
                 if (is_wp_error($result)) {
                     $code = $result->get_error_code();
-                    if (!in_array($code, array('drj_aluno_nao_encontrado', 'drj_ra_duplicado'), true)) return self::failure($result->get_error_message());
-                    $outcome = $code === 'drj_ra_duplicado' ? 'ra_duplicado' : 'nao_encontrado';
+                    $error_data = $result->get_error_data();
+                    if (($error_data['status'] ?? 500) >= 500) return self::failure($result->get_error_message());
+                    $outcome = array('drj_aluno_nao_encontrado' => 'nao_encontrado', 'drj_ra_duplicado' => 'ra_duplicado', 'drj_requerimento_ra_alterado' => 'conflito_requerimento')[$code] ?? 'invalidos';
                 } else {
                     $outcome = $result['situacao'];
                 }
                 $run['totals'][$outcome]++;
-                if (in_array($outcome, array('nao_encontrado', 'sem_ra', 'ra_duplicado'), true) && count($run['warnings']) < 10) {
+                if (in_array($outcome, array('nao_encontrado', 'sem_ra', 'ra_duplicado', 'conflito_requerimento', 'invalidos'), true) && count($run['warnings']) < 10) {
                     $run['warnings'][] = array('idrequerimento' => $item['idrequerimento'], 'situacao' => $outcome);
                 }
             }
@@ -224,10 +226,11 @@ final class DRJ_ERP {
         }
     }
 
-    private static function failure($message) {
+    private static function failure($message, $code = 'drj_erp_falha') {
         $report = (array) get_option(self::REPORT, array());
         $report['time'] = time(); $report['error'] = $message;
         update_option(self::REPORT, $report, false);
+        DRJ_Integration_Log::failure('erp', $code, $message, 503, self::settings()['company']);
         return new WP_Error('drj_erp_falha', $message);
     }
 

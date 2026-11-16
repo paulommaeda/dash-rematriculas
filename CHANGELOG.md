@@ -1,5 +1,16 @@
 # Histórico de versões
 
+## 4.6.0
+
+- Página administrativa de logs com origem, ID/protocolo, RA, versão, primeira/última leitura, contadores, resultado e motivo; filtros, paginação e histórico por requerimento.
+- Registro das leituras e decisões do ERP, API REST e Fluent Forms, além de falhas de consulta e requisições recusadas, sem guardar credenciais ou corpos de formulários.
+- Identidade única por coligada + ID do ERP, compartilhada entre consulta e recebimento REST; versões antigas não são reaplicadas.
+- API simples aceita id_requerimento, sistema_origem ou Idempotency-Key; envios antigos continuam protegidos pelo RA.
+- Bloqueio de reuso do mesmo requerimento para outro RA, serialização de reenvios simultâneos e reserva persistente para retomadas após falha.
+- Respostas incluem referência log_id; releituras aumentam contadores e mantêm o mesmo registro, preservando a primeira confirmação.
+- Histórico detalhado com retenção de 90 dias, preservando permanentemente a identidade e o controle de duplicidade.
+- Migração 4.6.0 adiciona duas tabelas de integração e mantém alunos, valores, conferências e arquivamentos.
+
 ## 4.5.0
 
 - API REST autenticada para receber rematrículas por RA, individualmente ou em lotes, com suporte ao contrato de requerimentos do ERP 0.19.23.

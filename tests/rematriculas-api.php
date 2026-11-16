@@ -32,6 +32,10 @@ $prefix = '000DRJ-' . wp_generate_password(10, false, false) . '-';
 $ids = array();
 $forms = $wpdb->prefix . 'fluentform_submissions';
 $created_forms = false;
+$log_backup = array();
+foreach (array(DRJ_Integration_Log::table(), DRJ_Integration_Log::table(true)) as $log_table) $log_backup[$log_table] = $wpdb->get_results("SELECT * FROM `$log_table`", ARRAY_A);
+$wpdb->query('DELETE FROM `' . DRJ_Integration_Log::table(true) . '`');
+$wpdb->query('DELETE FROM `' . DRJ_Integration_Log::table() . '`');
 $responses = array(); $requests = array();
 $mock = function ($pre, $args, $url) use (&$responses, &$requests) {
     if (strpos($url, 'https://erp.example.test/') !== 0) return $pre;
@@ -189,6 +193,9 @@ try {
     DRJ_ERP::schedule();
     $wpdb->query($wpdb->prepare("DELETE FROM `$table` WHERE ra LIKE %s", $wpdb->esc_like($prefix) . '%'));
     if ($created_forms) $wpdb->query("DROP TABLE `$forms`");
+    $wpdb->query('DELETE FROM `' . DRJ_Integration_Log::table(true) . '`');
+    $wpdb->query('DELETE FROM `' . DRJ_Integration_Log::table() . '`');
+    foreach ($log_backup as $log_table => $rows) foreach ($rows as $log_row) $wpdb->insert($log_table, $log_row);
     $_SERVER = $original_server;
     wp_set_current_user($original_user);
 }

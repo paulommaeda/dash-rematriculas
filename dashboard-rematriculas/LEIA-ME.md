@@ -1,4 +1,4 @@
-# Dashboard de Rematrículas Journey · 4.5.0
+# Dashboard de Rematrículas Journey · 4.6.0
 
 ## Instalação e atualização
 
@@ -24,6 +24,8 @@ O arquivamento e a restauração ficam registrados em uma tabela de histórico s
 Campos financeiros e cadastro ficam bloqueados enquanto o aluno estiver arquivado. É necessário restaurá-lo para editar. Antes de arquivar, salve eventuais alterações no cadastro. Uma nova sincronização ou um reenvio da API não desarquiva o aluno.
 
 ## Funcionalidades preservadas
+
+A versão 4.6.0 adiciona **Dash Rematrículas → Logs de integração**. A lista reúne uma linha por requerimento e mostra leituras, aceites, reenvios, rejeições, erros e motivos. O histórico detalha as tentativas, com filtros e paginação. O bloqueio de duplicidade usa coligada + ID no ERP, ID externo na API simples (com fallback por RA) e ID do envio no Fluent Forms. A consulta e o recebimento REST do mesmo requerimento do ERP compartilham a identidade. A atualização cria duas tabelas próprias de integração e preserva os alunos e suas configurações.
 
 A versão 4.5.0 adiciona a API de rematrículas `POST /wp-json/drj/v1/rematriculas` e a consulta manual/automática ao ERP 0.19.23+. Configure em **Dash Rematrículas → Configurações → API de rematrículas e consulta ao ERP**. Consulte o [guia completo de integração](API-REMATRICULAS.md) e a [especificação OpenAPI](openapi-rematriculas.json). A confirmação usa a mesma regra do Fluent Forms e não cadastra RAs desconhecidos como alunos novos.
 
@@ -67,6 +69,7 @@ As páginas que contêm dados do painel emitem instruções para não usar cache
 | `includes/class-drj-ajax.php` | Recepção e validação das ações |
 | `includes/class-drj-integrations.php` | Fluent Forms e webhooks |
 | `includes/class-drj-rematriculas.php` | Confirmação por RA compartilhada entre as entradas |
+| `includes/class-drj-integration-log.php` | Registro persistente, histórico, filtros e controle de reenvios |
 | `includes/class-drj-rest.php` | API autenticada de recebimento |
 | `includes/class-drj-erp.php` | Consulta paginada, credenciais e agendamento do ERP |
 | `includes/class-drj-dashboard.php` | Consulta e renderização do painel |

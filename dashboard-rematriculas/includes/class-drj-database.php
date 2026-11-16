@@ -89,6 +89,7 @@ final class DRJ_Database {
             ) ENGINE=InnoDB $charset")) {
                 $ok = false;
             }
+            if (!DRJ_Integration_Log::install()) $ok = false;
             if (!$ok) {
                 throw new RuntimeException('A atualização do banco não foi concluída. Verifique as permissões de criação e alteração de tabelas.');
             }

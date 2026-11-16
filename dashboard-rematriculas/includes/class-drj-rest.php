@@ -4,6 +4,7 @@ defined('ABSPATH') || exit;
 final class DRJ_REST {
     const REST_NAMESPACE = 'drj/v1';
     const MAX_BODY = 1048576;
+    private static $processed;
 
     public static function register() {
         add_action('rest_api_init', array(__CLASS__, 'routes'));
@@ -36,6 +37,7 @@ final class DRJ_REST {
         if (!is_array($body) || !$body) return new WP_Error('drj_corpo_invalido', 'Envie um objeto JSON com ra ou um requerimento do ERP.', array('status' => 422));
         if (isset($body['schema_version']) && $body['schema_version'] !== '1.0') return new WP_Error('drj_schema_invalido', 'Versão do contrato do ERP não suportada.', array('status' => 422));
         if (array_key_exists('items', $body)) {
+            if ((string) $request->get_header('idempotency-key') !== '') return new WP_Error('drj_id_lote', 'Em lotes, informe id_requerimento em cada item; não use um Idempotency-Key para todo o lote.', array('status' => 422));
             $items = $body['items'];
             if (!is_array($items) || !$items || count($items) > 50 || array_keys($items) !== range(0, count($items) - 1)) return new WP_Error('drj_lote_invalido', 'Envie de 1 a 50 itens em items.', array('status' => 422));
             $results = array();
@@ -46,39 +48,52 @@ final class DRJ_REST {
                     $errors++;
                     $data = $result->get_error_data();
                     $result = array('sucesso' => false, 'codigo' => $result->get_error_code(), 'mensagem' => $result->get_error_message(), 'http_status' => $data['status'] ?? 500);
+                    if (isset($data['log_id'])) $result['log_id'] = (int) $data['log_id'];
                 } else {
                     $result['sucesso'] = true;
                 }
                 $result['indice'] = $index;
                 $results[] = $result;
             }
+            self::mark($request);
             return new WP_REST_Response(array('resultados' => $results, 'erros' => $errors), $errors ? 207 : 200);
         }
-        $result = self::process(array_key_exists('item', $body) ? $body['item'] : $body);
+        $result = self::process(array_key_exists('item', $body) ? $body['item'] : $body, (string) $request->get_header('idempotency-key'));
+        self::mark($request);
         return is_wp_error($result) ? $result : new WP_REST_Response($result, 200);
     }
 
-    private static function process($item) {
-        if (!is_array($item)) return new WP_Error('drj_item_invalido', 'Cada requerimento deve ser um objeto JSON.', array('status' => 422));
-        if (array_key_exists('idrequerimento', $item)) {
+    private static function process($item, $header_id = '') {
+        if (is_array($item) && array_key_exists('idrequerimento', $item)) {
             $settings = DRJ_ERP::settings();
-            if ($settings['company'] === '') return new WP_Error('drj_coligada_nao_configurada', 'Configure a coligada autorizada nas configurações do dashboard.', array('status' => 409));
-            return DRJ_Rematriculas::erp_item($item, $settings['company'], $settings['ra_path'], $settings['created_since']);
+            if ($settings['company'] === '') {
+                $error = new WP_Error('drj_coligada_nao_configurada', 'Configure a coligada autorizada nas configurações do dashboard.', array('status' => 409));
+                DRJ_Integration_Log::failure('api', $error->get_error_code(), $error->get_error_message(), 409);
+                return $error;
+            }
+            return DRJ_Rematriculas::erp_item($item, $settings['company'], $settings['ra_path'], $settings['created_since'], 'api');
         }
-        // Campos financeiros, nome, turma, conferências e arquivamento são ignorados.
-        $ra = DRJ_Rematriculas::ra($item['ra'] ?? null);
-        if (is_wp_error($ra)) return $ra;
-        if (array_key_exists('status', $item)) {
-            if (!in_array($item['status'], array('pendente', 'aprovado', 'rejeitado'), true)) return new WP_Error('drj_status_invalido', 'Use pendente, aprovado ou rejeitado em status.', array('status' => 422));
-            if ($item['status'] === 'rejeitado') return array('ra' => $ra, 'situacao' => 'rejeitado', 'alterado' => false);
-        }
-        $date = DRJ_Rematriculas::date($item['data_rematricula'] ?? null);
-        return is_wp_error($date) ? $date : DRJ_Rematriculas::confirm($ra, $date);
+        return DRJ_Rematriculas::api_item($item, $header_id);
+    }
+
+    private static function mark($request) {
+        if (!self::$processed) self::$processed = new SplObjectStorage();
+        self::$processed->attach($request);
     }
 
     public static function private_response($response, $server, $request) {
         if (strpos($request->get_route(), '/' . self::REST_NAMESPACE . '/') === 0) {
             $response->header('Cache-Control', 'private, no-store, max-age=0');
+            if ($response->get_status() >= 400 && (!self::$processed || !self::$processed->contains($request))) {
+                $data = $response->get_data();
+                // Apenas códigos/mensagens conhecidos. Nunca guarda corpo ou cabeçalhos de falhas de autenticação.
+                $code = is_array($data) && isset($data['code']) ? $data['code'] : 'drj_requisicao_recusada';
+                $messages = array('drj_nao_autorizado' => 'Envio recusado: chave da integração ausente ou inválida.', 'drj_https_obrigatorio' => 'Envio recusado: a API exige HTTPS.',
+                    'rest_invalid_json' => 'Envio recusado: JSON inválido.', 'drj_json_obrigatorio' => 'Envio recusado: Content-Type deve ser JSON.',
+                    'drj_limite_corpo' => 'Envio recusado: corpo maior que 1 MiB.');
+                DRJ_Integration_Log::failure('api', $code, $messages[$code] ?? 'Requisição recusada antes de processar os itens. Confira formato, rota, contrato e configuração.', $response->get_status());
+                self::mark($request);
+            }
         }
         return $response;
     }

@@ -6,6 +6,7 @@ final class DRJ_Admin {
         add_menu_page('Dashboard Rematrículas', 'Dash Rematrículas', 'manage_options', 'dashboard-rematriculas', array(__CLASS__, 'dashboard'), 'dashicons-chart-pie', 29);
         if (DRJ_Finance_Auth::can_access()) add_menu_page('Dashboard Financeiro', 'Financeiro Journey', 'read', 'drj-financeiro', array('DRJ_Finance', 'admin'), 'dashicons-money-alt', 30);
         add_submenu_page('dashboard-rematriculas', 'Configurações', 'Configurações', 'manage_options', 'drj-configuracoes', array(__CLASS__, 'settings'));
+        add_submenu_page('dashboard-rematriculas', 'Logs de integração', 'Logs de integração', 'manage_options', 'drj-integracao-logs', array('DRJ_Integration_Log', 'admin'));
     }
 
     public static function dashboard() {

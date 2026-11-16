@@ -7,11 +7,13 @@ $erp_run = get_option(DRJ_ERP::RUN, false);
 ?>
 <section id="integracao-erp" class="drj-erp-settings" style="max-width:850px;">
     <h2>API de rematrículas e consulta ao ERP</h2>
+    <p><a class="button" href="<?php echo esc_url(admin_url('admin.php?page=drj-integracao-logs')); ?>">Ver logs de integração</a> Acompanhe cada leitura, decisão e motivo, com os reenvios agrupados no mesmo requerimento.</p>
     <?php if ($erp_error) : ?><div class="notice notice-error inline"><p><?php echo esc_html($erp_error); ?></p></div><?php endif; ?>
     <?php if (isset($_GET['drj_erp_saved']) && $_GET['drj_erp_saved'] === '1') : ?><div class="notice notice-success inline"><p>Integração salva.</p></div><?php endif; ?>
     <h3>Receber de outro sistema</h3>
     <p>O sistema pode enviar um <strong>POST</strong> para <code><?php echo esc_html(rest_url('drj/v1/rematriculas')); ?></code> usando HTTPS, <code>Content-Type: application/json</code> e o cabeçalho <code>X-DRJ-Key</code> com a chave da API cadastrada em “Acesso e integração”.</p>
     <pre style="white-space:pre-wrap;">{"ra":"000123","data_rematricula":"2026-11-13T13:00:00Z"}</pre>
+    <p class="description">Para identificar cada requerimento externo, envie também <code>id_requerimento</code> e, opcionalmente, <code>sistema_origem</code>. Reenvie sempre com o mesmo identificador. Sem identificador, o controle usa o RA. O ERP usa automaticamente coligada + ID do requerimento.</p>
     <p>Somente alunos já cadastrados são confirmados. Reenvios preservam a primeira confirmação. Alunos arquivados continuam ocultos. Valores, turma e conferências são preservados, como no Fluent Forms.</p>
     <p><a href="<?php echo esc_url(DRJ_URL . 'API-REMATRICULAS.md'); ?>" target="_blank" rel="noopener">Abrir documentação para o integrador</a></p>
     <h3>Buscar requerimentos no ERP 0.19.23 ou posterior</h3>
@@ -41,6 +43,7 @@ $erp_run = get_option(DRJ_ERP::RUN, false);
         <?php if (!empty($erp_report['error'])) : ?><p class="drj-error"><?php echo esc_html($erp_report['error']); ?></p><?php endif; ?>
         <?php if (!empty($erp_report['totals'])) : ?>
             <p><?php echo esc_html('Lidos: ' . $erp_report['totals']['lidos'] . ' · Confirmados: ' . $erp_report['totals']['confirmado'] . ' · Já confirmados: ' . $erp_report['totals']['ja_confirmado'] . ' · Arquivados: ' . $erp_report['totals']['arquivado'] . ' · RA não cadastrado: ' . $erp_report['totals']['nao_encontrado'] . ' · Sem RA: ' . $erp_report['totals']['sem_ra'] . ' · RA duplicado: ' . $erp_report['totals']['ra_duplicado'] . ' · Rejeitados: ' . $erp_report['totals']['rejeitado'] . ' · Anteriores ao período: ' . $erp_report['totals']['anterior_ao_periodo']); ?></p>
+            <p><?php echo esc_html('Versões antigas ignoradas: ' . ($erp_report['totals']['versao_antiga'] ?? 0) . ' · Associação a outro RA bloqueada: ' . ($erp_report['totals']['conflito_requerimento'] ?? 0) . ' · Itens inválidos: ' . ($erp_report['totals']['invalidos'] ?? 0)); ?></p>
         <?php endif; ?>
         <?php if (!empty($erp_report['warnings'])) : ?>
             <p>Requerimentos para conferir (até 10 por rodada): <?php echo esc_html(implode(', ', array_map(function ($warning) { return '#' . $warning['idrequerimento'] . ' (' . $warning['situacao'] . ')'; }, $erp_report['warnings']))); ?>.</p>

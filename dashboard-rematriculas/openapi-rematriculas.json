@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Dashboard de Rematrículas Journey — Recebimento",
-    "version": "4.5.0",
-    "description": "Recebe requerimentos como o Fluent Forms: confirma RA já cadastrado e ativo, preservando primeira data, valores, conferências e arquivamento. Somente HTTPS. Não cria alunos nem permite leitura de finanças. Limite de 1 MiB por chamada. Veja API-REMATRICULAS.md."
+    "version": "4.6.0",
+    "description": "Recebe requerimentos como o Fluent Forms: confirma RA já cadastrado e ativo, preservando primeira data, valores, conferências e arquivamento. Somente HTTPS. Não cria alunos nem permite leitura de finanças. Limite de 1 MiB por chamada. Veja API-REMATRICULAS.md. Logs administrativos e controle persistente de reenvios por identidade. Respostas de itens incluem log_id quando disponível."
   },
   "servers": [
     {
@@ -133,7 +133,7 @@
             }
           },
           "409": {
-            "description": "RA duplicado, conflito ou coligada não configurada",
+            "description": "RA duplicado, requerimento vinculado a outro RA, conflito ou coligada não configurada",
             "content": {
               "application/json": {
                 "schema": {
@@ -182,7 +182,19 @@
               }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:-]{1,100}$"
+            },
+            "description": "Alternativa ao id_requerimento em envios simples; em lotes use um ID por item."
+          }
+        ]
       }
     }
   },
@@ -234,6 +246,16 @@
               "rejeitado"
             ],
             "description": "Rejeitado é ignorado. Demais situações confirmam o recebimento."
+          },
+          "id_requerimento": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._:-]{1,100}$",
+            "description": "Identificador estável; repita o mesmo valor nos reenvios. Sem ID, usa o RA."
+          },
+          "sistema_origem": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._:-]{1,64}$",
+            "default": "externo"
           }
         },
         "additionalProperties": true
@@ -347,7 +369,8 @@
               "arquivado",
               "rejeitado",
               "sem_ra",
-              "anterior_ao_periodo"
+              "anterior_ao_periodo",
+              "versao_antiga"
             ]
           },
           "alterado": {
@@ -359,6 +382,15 @@
               "null"
             ],
             "description": "Data local no fuso WordPress, AAAA-MM-DD HH:MM:SS."
+          },
+          "log_id": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Referência ao registro administrativo."
+          },
+          "duplicado": {
+            "type": "boolean",
+            "description": "Requerimento aceito anteriormente; nenhuma nova confirmação foi aplicada."
           }
         }
       },
@@ -420,6 +452,15 @@
                 },
                 "http_status": {
                   "type": "integer"
+                },
+                "log_id": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Referência ao registro administrativo."
+                },
+                "duplicado": {
+                  "type": "boolean",
+                  "description": "Requerimento aceito anteriormente; nenhuma nova confirmação foi aplicada."
                 }
               }
             }
@@ -440,6 +481,11 @@
             "properties": {
               "status": {
                 "type": "integer"
+              },
+              "log_id": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Referência ao registro administrativo."
               }
             }
           }

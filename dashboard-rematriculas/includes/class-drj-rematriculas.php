@@ -74,8 +74,50 @@ final class DRJ_Rematriculas {
         return $value;
     }
 
+    public static function api_item($item, $header_id = '') {
+        $invalid = null;
+        if (!is_array($item)) {
+            $invalid = new WP_Error('drj_item_invalido', 'Cada requerimento deve ser um objeto JSON.', array('status' => 422));
+            $item = array();
+        }
+        $id = $item['id_requerimento'] ?? $header_id;
+        $system = $item['sistema_origem'] ?? 'externo';
+        if (!is_string($id) || ($id !== '' && (!preg_match('/^[A-Za-z0-9._:-]{1,100}$/D', $id)))) $invalid = new WP_Error('drj_id_invalido', 'Use um identificador externo de até 100 letras, números, pontos, traços, dois-pontos ou sublinhados.', array('status' => 422));
+        if (!is_string($system) || !preg_match('/^[A-Za-z0-9._:-]{1,64}$/D', $system)) $invalid = new WP_Error('drj_origem_invalida', 'Informe um sistema_origem válido, com até 64 caracteres.', array('status' => 422));
+        if ($header_id !== '' && isset($item['id_requerimento']) && $item['id_requerimento'] !== $header_id) $invalid = new WP_Error('drj_id_conflitante', 'O Idempotency-Key e o id_requerimento precisam ser iguais.', array('status' => 422));
+        $ra = self::ra($item['ra'] ?? null);
+        if (is_wp_error($ra) && !$invalid) $invalid = $ra;
+        $status = $item['status'] ?? 'pendente';
+        if (!in_array($status, array('pendente', 'aprovado', 'rejeitado'), true)) $invalid = new WP_Error('drj_status_invalido', 'Use pendente, aprovado ou rejeitado em status.', array('status' => 422));
+        $date = $status === 'rejeitado' ? null : self::date($item['data_rematricula'] ?? null);
+        if (is_wp_error($date) && !$invalid) $invalid = $date;
+        $context = array('origem' => 'api', 'canal' => 'api', 'sistema' => is_string($system) ? $system : '', 'requerimento' => is_string($id) ? $id : '', 'ra' => is_wp_error($ra) ? '' : $ra, 'processar' => !$invalid && $status !== 'rejeitado');
+        if ($invalid && $context['requerimento'] === '' && $context['ra'] === '') $context['identidade'] = array('api-invalido', $invalid->get_error_code(), gmdate('Y-m-d-H'));
+        return DRJ_Integration_Log::process($context, function () use ($ra, $date, $status) {
+            return $status === 'rejeitado' ? array('ra' => $ra, 'situacao' => 'rejeitado', 'alterado' => false) : self::confirm($ra, $date);
+        }, $invalid);
+    }
+
     /** Aceita o item documentado na API de requerimentos 0.19.23. */
-    public static function erp_item($item, $company, $ra_path = '', $created_since = '') {
+    public static function erp_item($item, $company, $ra_path = '', $created_since = '', $channel = 'consulta') {
+        $normalized = self::normalize_erp($item, $company, $ra_path, $created_since);
+        $data = is_array($item) ? $item : array();
+        $ra = is_array($normalized) ? ($normalized['ra'] ?? '') : '';
+        if (is_wp_error($normalized)) {
+            $ra = self::field($data, 'resultado.ra');
+            if (($ra === null || $ra === '') && $ra_path !== '') $ra = self::field($data, $ra_path);
+            $ra = self::ra($ra);
+            if (is_wp_error($ra)) $ra = '';
+        }
+        $context = array('origem' => 'erp', 'canal' => $channel, 'coligada' => $data['codcoligada'] ?? '', 'requerimento' => $data['idrequerimento'] ?? '',
+            'protocolo' => $data['protocolo'] ?? '', 'versao' => $data['versao'] ?? '', 'ra' => $ra,
+            'processar' => !is_wp_error($normalized) && !isset($normalized['situacao']));
+        return DRJ_Integration_Log::process($context, function () use ($normalized) {
+            return isset($normalized['situacao']) ? $normalized : self::confirm($normalized['ra'], $normalized['data']);
+        }, is_wp_error($normalized) ? $normalized : null);
+    }
+
+    private static function normalize_erp($item, $company, $ra_path, $created_since) {
         if (!is_array($item) || !isset($item['codcoligada']) || !is_string($item['codcoligada']) || $item['codcoligada'] !== $company) {
             return new WP_Error('drj_coligada_invalida', 'O requerimento pertence a outra coligada ou não informa a coligada.', array('status' => 422));
         }
@@ -91,6 +133,7 @@ final class DRJ_Rematriculas {
         $ra = self::field($item, 'resultado.ra');
         if (($ra === null || $ra === '') && $ra_path !== '') $ra = self::field($item, $ra_path);
         if ($ra === null || $ra === '') return array('situacao' => 'sem_ra', 'alterado' => false);
-        return self::confirm($ra, $date);
+        $ra = self::ra($ra);
+        return is_wp_error($ra) ? $ra : array('ra' => $ra, 'data' => $date);
     }
 }

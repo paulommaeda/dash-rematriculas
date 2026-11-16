@@ -36,39 +36,36 @@ final class DRJ_Integrations {
         if (!$until) {
             $until = (int) $wpdb->get_var("SELECT MAX(id) FROM `$forms` WHERE 1=1 $where");
         }
-        $batch = $wpdb->get_results($wpdb->prepare("SELECT id, response, created_at FROM `$forms` WHERE id > %d AND id <= %d $where ORDER BY id ASC LIMIT 200", $cursor, $until));
+        $batch = $wpdb->get_results($wpdb->prepare("SELECT id, form_id, response, created_at FROM `$forms` WHERE id > %d AND id <= %d $where ORDER BY id ASC LIMIT 200", $cursor, $until));
         if ($wpdb->last_error) {
             throw new RuntimeException('Não foi possível consultar o Fluent Forms.');
         }
         $table = DRJ_Database::table();
-        $pending = $wpdb->get_results("SELECT id, ra FROM `$table` WHERE arquivado = 0 AND status_rematricula = 0");
+        $known = $wpdb->get_col("SELECT ra FROM `$table`");
+        if ($wpdb->last_error) throw new RuntimeException('Não foi possível consultar os RAs do acompanhamento.');
         $map = array();
-        foreach ($pending ?: array() as $student) {
-            $map[(string) $student->ra] = (int) $student->id;
-        }
+        foreach ($known ?: array() as $ra) $map[(string) $ra] = true;
         $field = get_option('drj_ff_ra_field', '');
         $updated = 0;
         foreach ($batch ?: array() as $submission) {
             $cursor = (int) $submission->id;
             $data = json_decode($submission->response, true);
-            if (!is_array($data)) {
-                continue;
+            $ra = ''; $invalid = null;
+            if (!is_array($data)) $invalid = new WP_Error('drj_ff_json_invalido', 'Rejeitado. O envio do Fluent Forms não contém um JSON válido.', array('status' => 422));
+            $values = is_array($data) ? ($field !== '' ? array($data[$field] ?? null) : array_values($data)) : array();
+            foreach ($values as $value) if (is_string($value) || is_int($value)) {
+                $candidate = trim((string) $value);
+                if ($field !== '' || isset($map[$candidate])) { $ra = $candidate; break; }
             }
-            $values = $field !== '' ? array($data[$field] ?? null) : array_values($data);
-            foreach ($values as $value) {
-                if (!is_string($value) && !is_int($value)) {
-                    continue;
-                }
-                $ra = trim((string) $value);
-                if (!isset($map[$ra])) {
-                    continue;
-                }
-                $result = DRJ_Rematriculas::confirm($ra, $submission->created_at);
-                if (is_wp_error($result)) throw new RuntimeException($result->get_error_message());
-                $updated += (int) $result['alterado'];
-                unset($map[$ra]);
-                break;
-            }
+            if ($ra !== '') { $valid_ra = DRJ_Rematriculas::ra($ra); if (is_wp_error($valid_ra)) $invalid = $valid_ra; }
+            $result = DRJ_Integration_Log::process(array('origem' => 'fluent_forms', 'canal' => 'sincronizacao', 'sistema' => 'formulario_' . (int) $submission->form_id,
+                'requerimento' => (string) $submission->id, 'ra' => $ra, 'processar' => $ra !== '' && !$invalid), function () use ($ra, $submission, $field) {
+                return $ra === '' ? array('situacao' => $field !== '' ? 'sem_ra' : 'sem_correspondencia', 'alterado' => false) : DRJ_Rematriculas::confirm($ra, $submission->created_at);
+            }, $invalid);
+            if (is_wp_error($result)) {
+                $error_data = $result->get_error_data();
+                if (($error_data['status'] ?? 500) >= 500) throw new RuntimeException($result->get_error_message());
+            } else $updated += (int) $result['alterado'];
         }
         return array('cursor' => $cursor, 'until' => $until, 'done' => count($batch ?: array()) < 200 || $cursor >= $until, 'updated' => $updated);
     }

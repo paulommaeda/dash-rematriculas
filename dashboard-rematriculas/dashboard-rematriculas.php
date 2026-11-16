@@ -3,7 +3,7 @@
  * Plugin Name: Dashboard de Rematrículas Journey
  * Plugin URI: https://github.com/paulommaeda/dash-rematriculas
  * Description: Painéis de rematrículas e financeiro, conferências, integração e arquivamento reversível de desistências.
- * Version: 4.5.0
+ * Version: 4.6.0
  * Author: Paulo Maeda
  * Requires at least: 6.0
  * Requires PHP: 7.4
@@ -13,13 +13,13 @@
 
 defined('ABSPATH') || exit;
 
-define('DRJ_VERSION', '4.5.0');
-define('DRJ_DB_VERSION', '4.0.0');
+define('DRJ_VERSION', '4.6.0');
+define('DRJ_DB_VERSION', '4.6.0');
 define('DRJ_FILE', __FILE__);
 define('DRJ_PATH', plugin_dir_path(__FILE__));
 define('DRJ_URL', plugin_dir_url(__FILE__));
 
-foreach (array('database', 'auth', 'finance-auth', 'pricing', 'students', 'rematriculas', 'integrations', 'erp', 'rest', 'ajax', 'dashboard', 'finance', 'admin', 'updater') as $module) {
+foreach (array('database', 'auth', 'finance-auth', 'pricing', 'students', 'integration-log', 'rematriculas', 'integrations', 'erp', 'rest', 'ajax', 'dashboard', 'finance', 'admin', 'updater') as $module) {
     require_once DRJ_PATH . 'includes/class-drj-' . $module . '.php';
 }
 
@@ -39,6 +39,7 @@ DRJ_Pricing::register();
 DRJ_Updater::register();
 DRJ_REST::register();
 DRJ_ERP::register();
+DRJ_Integration_Log::register();
 add_action('admin_notices', array('DRJ_Auth', 'setup_notice'));
 
 // Compatibilidade para chamadas PHP ao renderizador da versão anterior.
